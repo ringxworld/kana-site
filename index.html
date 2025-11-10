@@ -127,124 +127,135 @@
       try { input.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta)); } catch {}
     }
 
-    let composing = false;
-    input.addEventListener('compositionstart', ()=> composing = true);
-    input.addEventListener('compositionend', ()=> { composing = false; update(); });
-    input.addEventListener('input', ()=> { if(!composing) update(); }, { passive: true });
-    mode.addEventListener('change', update);
+    // --- Text to Speech with explicit UX states (Firefox-hardened) ---
+let voices = []; 
+let voicesReady = false; 
+let ttsEnabled = false;
 
-    // --- Text to Speech with explicit UX states ---
-    let voices = []; let voicesReady = false; let ttsEnabled = false;
+const isFirefox = /firefox/i.test(navigator.userAgent);
 
-    function setTtsState(state, msg){
-      // state: 'locked' | 'ready' | 'unsupported' | 'error'
-      if(state==='ready'){
-        ttsInitBtn.textContent = 'Speech Ready ✓';
-        ttsInitBtn.classList.remove('primary');
-        ttsInitBtn.classList.add('success');
-        ttsInitBtn.setAttribute('aria-pressed','true');
-        ttsInitBtn.disabled = true;
-        speakBtn.disabled = false;
-      } else if(state==='locked'){
-        ttsInitBtn.textContent = 'Enable Speech';
-        ttsInitBtn.classList.add('primary');
-        ttsInitBtn.classList.remove('success');
-        ttsInitBtn.setAttribute('aria-pressed','false');
-        ttsInitBtn.disabled = false;
-        speakBtn.disabled = true;
-      } else if(state==='unsupported'){
-        ttsInitBtn.textContent = 'Speech Unsupported';
-        ttsInitBtn.disabled = true;
-        speakBtn.disabled = true;
-      } else if(state==='error'){
-        ttsInitBtn.textContent = 'Speech Error';
-        ttsInitBtn.disabled = false;
-        speakBtn.disabled = true;
-      }
-      if (msg) ttsStatus.textContent = 'Speech: ' + msg;
+function setTtsState(state, msg){
+  // state: 'locked' | 'ready' | 'unsupported' | 'error'
+  if(state==='ready'){
+    ttsInitBtn.textContent = 'Speech Ready ✓';
+    ttsInitBtn.classList.remove('primary');
+    ttsInitBtn.classList.add('success');
+    ttsInitBtn.setAttribute('aria-pressed','true');
+    ttsInitBtn.disabled = true;
+    speakBtn.disabled = false;
+  } else if(state==='locked'){
+    ttsInitBtn.textContent = 'Enable Speech';
+    ttsInitBtn.classList.add('primary');
+    ttsInitBtn.classList.remove('success');
+    ttsInitBtn.setAttribute('aria-pressed','false');
+    ttsInitBtn.disabled = false;
+    speakBtn.disabled = true;
+  } else if(state==='unsupported'){
+    ttsInitBtn.textContent = 'Speech Unsupported';
+    ttsInitBtn.disabled = true;
+    speakBtn.disabled = true;
+  } else if(state==='error'){
+    ttsInitBtn.textContent = 'Speech Error';
+    ttsInitBtn.disabled = false;
+    speakBtn.disabled = true;
+  }
+  if (msg) ttsStatus.textContent = 'Speech: ' + msg;
+}
+
+function populateVoices(){
+  voiceSel.innerHTML = '';
+  const sorted = voices.slice().sort((a,b)=>{
+    const aj = /ja/i.test(a.lang), bj = /ja/i.test(b.lang);
+    if (aj !== bj) return aj ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  sorted.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v.name; 
+    opt.textContent = `${v.name} (${v.lang})${v.default?' • default':''}`;
+    voiceSel.appendChild(opt);
+  });
+}
+
+function tryLoadVoices(){
+  const v = window.speechSynthesis.getVoices();
+  if (!v || v.length === 0) return false;
+  voices = v; 
+  voicesReady = true; 
+  populateVoices(); 
+  return true;
+}
+
+// light audio nudge helps some browsers (including Firefox) unlock audio
+function unlockAudioGesture(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const o = ctx.createOscillator(); 
+    const g = ctx.createGain();
+    o.type='sine'; o.frequency.value=880; g.gain.value=0.001;
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 80);
+  }catch{}
+}
+
+function unlockSynth(cb){
+  const u = new SpeechSynthesisUtterance('\u200b'); // zero-width space
+  u.volume = 0.01; u.rate = 1; u.pitch = 1; u.lang = 'ja-JP';
+  u.onend = ()=> cb && cb();
+  try { window.speechSynthesis.speak(u); } catch { cb && cb(); }
+}
+
+window.speechSynthesis.onvoiceschanged = ()=>{
+  if (tryLoadVoices()) setTtsState('ready','Ready');
+};
+
+// Enable button: run all the unlock steps and poll longer on Firefox
+ttsInitBtn.addEventListener('click', ()=>{
+  if (!('speechSynthesis' in window)) return setTtsState('unsupported','Not available in this browser');
+  ttsEnabled = true;
+  unlockAudioGesture();
+  let attempts = 0;
+  const maxAttempts = isFirefox ? 20 : 10;  // poll a bit longer on Firefox
+  const timer = setInterval(()=>{
+    attempts++;
+    if (tryLoadVoices()) { clearInterval(timer); setTtsState('ready','Ready'); }
+    if (attempts >= maxAttempts) { 
+      clearInterval(timer);
+      // Even if no voice list, many Firefox installs can still speak with a lang
+      setTtsState('ready', voicesReady ? 'Ready' : 'Ready (no voice list, using ja-JP)');
     }
+  }, 150);
+  unlockSynth(()=> setTimeout(()=>{ if (tryLoadVoices()) setTtsState('ready','Ready'); }, 120));
+});
 
-    function populateVoices(){
-      voiceSel.innerHTML = '';
-      const sorted = voices.slice().sort((a,b)=>{
-        const aj = /ja/i.test(a.lang), bj = /ja/i.test(b.lang);
-        if (aj !== bj) return aj ? -1 : 1;
-        return a.name.localeCompare(b.name);
-      });
-      sorted.forEach(v=>{
-        const opt = document.createElement('option');
-        opt.value = v.name; opt.textContent = `${v.name} (${v.lang})${v.default?' • default':''}`;
-        voiceSel.appendChild(opt);
-      });
-    }
+function getSelectedVoice(){
+  const sel = voiceSel.value;
+  return voices.find(v=>v.name===sel) || voices.find(v=>/ja/i.test(v.lang)) || voices[0] || null;
+}
 
-    function tryLoadVoices(){
-      const v = window.speechSynthesis.getVoices();
-      if (!v || v.length === 0) return false;
-      voices = v; voicesReady = true; populateVoices(); return true;
-    }
+function speak(text){
+  if(!text) return;
+  if(!('speechSynthesis' in window)) { setTtsState('unsupported','Not available'); return; }
+  window.speechSynthesis.cancel();
 
-    function unlockAudioGesture(){
-      // Short beep to unlock audio contexts on mobile/Firefox
-      try{
-        const ctx = new (window.AudioContext||window.webkitAudioContext)();
-        const o = ctx.createOscillator(); const g = ctx.createGain();
-        o.type='sine'; o.frequency.value=880; g.gain.value=0.001; // nearly silent
-        o.connect(g); g.connect(ctx.destination);
-        o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 80);
-      }catch{}
-    }
+  const u = new SpeechSynthesisUtterance(text);
+  const v = getSelectedVoice();
+  if (v) { u.voice = v; u.lang = v.lang || 'ja-JP'; }
+  else   { u.lang = 'ja-JP'; } // Firefox fallback when voices list is empty
 
-    function unlockSynth(cb){
-      // A near-empty utterance to nudge speech engines (esp. Safari/Firefox)
-      const u = new SpeechSynthesisUtterance('\u200b');
-      u.volume = 0.01; u.rate = 1; u.pitch = 1; u.lang = 'ja-JP';
-      u.onend = ()=> cb && cb();
-      try { window.speechSynthesis.speak(u); } catch { cb && cb(); }
-    }
+  u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+  u.onerror = ()=> setTtsState('error','Playback error');
 
-    window.speechSynthesis.onvoiceschanged = ()=>{ if (tryLoadVoices()) setTtsState('ready','Ready'); };
+  // Firefox generally ignores resume() here; keep it simple:
+  try { if (!isFirefox) window.speechSynthesis.resume(); } catch {}
 
-    ttsInitBtn.addEventListener('click', ()=>{
-      if (!('speechSynthesis' in window)) return setTtsState('unsupported','Not available in this browser');
-      unlockAudioGesture();
-      // Poll for voices briefly; Firefox may populate after first speak
-      let attempts = 0;
-      const maxAttempts = 10;
-      const timer = setInterval(()=>{
-        attempts++;
-        if (tryLoadVoices()) { clearInterval(timer); setTtsState('ready','Ready'); }
-        if (attempts>=maxAttempts){ clearInterval(timer); setTtsState('ready','Ready (system default)'); }
-      }, 150);
-      unlockSynth(()=>{
-        // one more check right after the unlock utterance
-        setTimeout(()=>{ if (tryLoadVoices()) setTtsState('ready','Ready'); }, 100);
-      });
-    });
+  window.speechSynthesis.speak(u);
+}
 
-    function getSelectedVoice(){
-      const sel = voiceSel.value;
-      return voices.find(v=>v.name===sel) || voices.find(v=>/ja/i.test(v.lang)) || voices[0] || null;
-    }
+speakBtn.addEventListener('click', ()=> speak(input.value));
 
-    function speak(text){
-      if(!text) return;
-      if(!('speechSynthesis' in window)) { setTtsState('unsupported','Not available'); return; }
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      const v = getSelectedVoice();
-      if (v) { u.voice = v; u.lang = v.lang || 'ja-JP'; }
-      else { u.lang = 'ja-JP'; }
-      u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-      u.onerror = ()=> setTtsState('error','Playback error');
-      try { window.speechSynthesis.resume(); } catch {}
-      window.speechSynthesis.speak(u);
-    }
-
-    speakBtn.addEventListener('click', ()=> speak(input.value));
-
-    // initial
-    setTtsState('locked','Locked (tap Enable)');
+// initial state
+setTtsState('locked','Locked (tap Enable)');
     update();
   </script>
 </body>
