@@ -1,0 +1,49 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log*
+
+# Build outputs
+dist/
+build/
+.cache/
+.tmp/
+out/
+coverage/
+.next/
+.vite/
+.DS_Store
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+ehthumbs.db
+Icon?
+desktop.ini
+
+# Misc
+*.log
+*.bak
+*.tmp
+
+# Service worker cache / generated blobs (if exporting builds)
+sw.js
+sw.*

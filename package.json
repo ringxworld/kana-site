@@ -1,0 +1,11 @@
+{
+  "name": "kana-site",
+  "version": "1.0.0",
+  "description": "Offline-ready Romaji → Kana converter (single-page PWA)",
+  "author": "ringxworld",
+  "license": "MIT",
+  "scripts": {
+    "start": "npx serve .",
+    "format": "prettier --write ."
+  }
+}
