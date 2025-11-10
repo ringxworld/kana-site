@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Romaji → かなカナ</title>
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#111824; --muted:#152033; --text:#e8eef7; --sub:#a8b3c5; --acc:#7aa2ff; --ok:#6ee7b7; --warn:#fbbf24; --danger:#f87171;
+      --radius:16px; --pad:16px; --pad-sm:12px; --tap:48px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",sans-serif;}
+    @media (max-width:420px){ body{font-size:15px} }
+    header{padding:20px var(--pad) 10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    header h1{margin:0;font-size:20px;font-weight:700}
+    header .badge{background:var(--muted);padding:6px 10px;border-radius:999px;color:var(--sub);font-size:12px}
+    .container{padding:var(--pad);max-width:1100px;margin:0 auto;}
+    .grid{display:grid;gap:var(--pad);grid-template-columns:1fr;}
+    @media(min-width:960px){.grid{grid-template-columns:1.2fr 1fr}}
+    .card{background:var(--panel);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card .head{display:flex;align-items:center;justify-content:space-between;padding:14px var(--pad);border-bottom:1px solid #1f2a3a;gap:8px;flex-wrap:wrap}
+    .card .head h2{margin:0;font-size:14px;color:var(--sub);letter-spacing:.4px;text-transform:uppercase}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+
+    /* Mobile-first, finger-friendly controls */
+    button,select,input[type="range"]{appearance:none;border:1px solid #293241;background:#0f1725;color:var(--text);padding:12px 14px;border-radius:12px;font-weight:600;min-height:var(--tap);touch-action:manipulation}
+    button:active{transform:translateY(1px)}
+    button.ghost{background:transparent}
+    button.primary{background:linear-gradient(180deg,#486bff,#3a57d6);border:none}
+    button.good{background:linear-gradient(180deg,#15c27f,#12a06b);border:none}
+    button.warn{background:linear-gradient(180deg,#f6c650,#e0a925);border:none}
+    select{padding-right:34px;background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23a8b3c5"><path d="M7 10l5 5 5-5z"/></svg>'); background-repeat:no-repeat; background-position:right 10px center}
+
+    textarea, .out{width:100%;min-height:260px;background:#0a1220;color:var(--text);border:1px solid #1f2a3a;border-radius:12px;padding:14px 14px 56px;resize:vertical;font-size:18px;line-height:1.7}
+    @media (max-width:600px){ textarea,.out{min-height:220px;font-size:17px} }
+    .panel-body{padding:var(--pad)}
+    .row{display:flex;gap:8px;flex-wrap:wrap}
+    .hint{color:var(--sub);font-size:12px;margin-top:8px}
+    .status{font-size:12px;color:var(--sub)}
+    .footer{padding:12px var(--pad);border-top:1px solid #1f2a3a;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--sub);}
+    .pill{padding:6px 10px;border-radius:999px;background:#0f1725;border:1px solid #273144;color:var(--sub);}
+    .small{font-size:12px}
+
+    /* TTS controls */
+    .tts-grid{display:grid;gap:10px;grid-template-columns:1fr;}
+    @media(min-width:580px){.tts-grid{grid-template-columns:1fr 1fr}}
+    .tts-row{display:flex;align-items:center;gap:10px}
+    label{font-size:12px;color:var(--sub)}
+    .range{display:flex;align-items:center;gap:10px}
+    .range output{min-width:2.5ch;text-align:right;color:var(--sub)}
+
+    /* Install prompt banner */
+    .update-banner{position:fixed;left:12px;right:12px;bottom:12px;background:#0f1725;border:1px solid #2b364a;border-radius:14px;padding:10px 12px;display:none;align-items:center;justify-content:space-between;gap:12px;z-index:50}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Romaji → ひらがな / カタカナ</h1>
+    <span class="badge">Offline‑ready</span>
+  </header>
+  <div class="container">
+    <div class="grid">
+      <section class="card">
+        <div class="head">
+          <h2>Input</h2>
+          <div class="toolbar">
+            <select id="mode" aria-label="Conversion mode">
+              <option value="hiragana">→ Hiragana</option>
+              <option value="katakana">→ Katakana</option>
+              <option value="none">No conversion</option>
+            </select>
+            <button id="clear" class="ghost" aria-label="Clear input">Clear</button>
+            <button id="copyIn" class="ghost" aria-label="Copy input">Copy</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <textarea id="input" inputmode="latin" placeholder="Type romaji here (e.g., konnichiwa, ryokou, gakkou)…" aria-label="Romaji input"></textarea>
+          <div class="row"><span class="hint">Rules: double consonants → っ, standalone n before non‑vowel/line end → ん, digraphs like sha/cho/kyo supported.</span></div>
+        </div>
+        <div class="footer"><span class="status" id="statusIn">Ready</span><span class="pill small">Ctrl/Cmd+Enter → Copy output</span></div>
+      </section>
+
+      <section class="card">
+        <div class="head">
+          <h2>Live Output</h2>
+          <div class="toolbar">
+            <button id="copyOut" class="good" aria-label="Copy output">Copy Output</button>
+            <button id="downloadOut" class="primary" aria-label="Download output">Download .txt</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <textarea id="output" class="out" placeholder="Converted text will appear here…" aria-label="Kana output"></textarea>
+          <div class="row"><span class="hint">Switch the mode to output カタカナ instead. You can also paste Japanese here—nothing is altered unless you type in the input panel.</span></div>
+        </div>
+        <div class="footer"><span class="status" id="statusOut">Hiragana mode</span><span class="pill small" id="offlineState">Checking offline…</span></div>
+      </section>
+
+      <section class="card">
+        <div class="head">
+          <h2>Speech (Text‑to‑Speech)</h2>
+          <div class="toolbar">
+            <button id="speak" class="good" aria-label="Speak output">Speak</button>
+            <button id="pause" class="ghost" aria-label="Pause speech">Pause</button>
+            <button id="resume" class="ghost" aria-label="Resume speech">Resume</button>
+            <button id="stop" class="warn" aria-label="Stop speech">Stop</button>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="tts-grid">
+            <div class="tts-row">
+              <label for="voice">Voice</label>
+              <select id="voice" aria-label="TTS voice"></select>
+            </div>
+            <div class="tts-row range">
+              <label for="rate">Rate</label>
+              <input id="rate" type="range" min="0.5" max="1.5" step="0.05" value="1" />
+              <output id="rateVal">1.00</output>
+            </div>
+            <div class="tts-row range">
+              <label for="pitch">Pitch</label>
+              <input id="pitch" type="range" min="0.5" max="2" step="0.05" value="1" />
+              <output id="pitchVal">1.00</output>
+            </div>
+          </div>
+          <div class="hint">Tip: pick a Japanese voice if available (labels often include "ja-JP"). Mobile devices usually provide system voices.</div>
+        </div>
+        <div class="footer"><span class="status" id="speechState">Idle</span><span class="pill small">Speaks from the Output panel</span></div>
+      </section>
+    </div>
+  </div>
+
+  <div id="updateBanner" class="update-banner">
+    <span>New version available.</span>
+    <div class="toolbar">
+      <button id="reloadNow" class="primary">Update</button>
+      <button id="dismissBanner" class="ghost">Dismiss</button>
+    </div>
+  </div>
+
+  <script>
+    // --- Converter ---
+    const MAP = {
+      kya:"きゃ",kyu:"きゅ",kyo:"きょ", gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",
+      sha:"しゃ",shu:"しゅ",sho:"しょ", ja:"じゃ",ju:"じゅ",jo:"じょ",
+      cha:"ちゃ",chu:"ちゅ",cho:"ちょ", nya:"にゃ",nyu:"にゅ",nyo:"にょ",
+      hya:"ひゃ",hyu:"ひゅ",hyo:"ひょ", mya:"みゃ",myu:"みゅ",myo:"みょ",
+      rya:"りゃ",ryu:"りゅ",ryo:"りょ", bya:"びゃ",byu:"びゅ",byo:"びょ",
+      pya:"ぴゃ",pyu:"ぴゅ",pyo:"ぴょ",
+      tsu:"つ", chi:"ち", shi:"し", ji:"じ", dzu:"づ", du:"づ", di:"ぢ", ti:"ち", tu:"つ", fu:"ふ",
+      a:"あ",i:"い",u:"う",e:"え",o:"お",
+      ka:"か",ki:"き",ku:"く",ke:"け",ko:"こ",
+      ga:"が",gi:"ぎ",gu:"ぐ",ge:"げ",go:"ご",
+      sa:"さ",si:"し",su:"す",se:"せ",so:"そ",
+      za:"ざ",zi:"じ",zu:"ず",ze:"ぜ",zo:"ぞ",
+      ta:"た",te:"て",to:"と",
+      da:"だ",de:"で",do:"ど",
+      na:"な",ni:"に",nu:"ぬ",ne:"ね",no:"の",
+      ha:"は",hi:"ひ",he:"へ",ho:"ほ",
+      ba:"ば",bi:"び",bu:"ぶ",be:"べ",bo:"ぼ",
+      pa:"ぱ",pi:"ぴ",pu:"ぷ",pe:"ぺ",po:"ぽ",
+      ma:"ま",mi:"み",mu:"む",me:"め",mo:"も",
+      ya:"や",yu:"ゆ",yo:"よ",
+      ra:"ら",ri:"り",ru:"る",re:"れ",ro:"ろ",
+      wa:"わ",wi:"うぃ",we:"うぇ",wo:"を",
+      fa:"ふぁ",fi:"ふぃ",fe:"ふぇ",fo:"ふぉ",
+      va:"ゔぁ",vi:"ゔぃ",vu:"ゔ",ve:"ゔぇ",vo:"ゔぉ",
+      xa:"ぁ",xi:"ぃ",xu:"ぅ",xe:"ぇ",xo:"ぉ",
+      xya:"ゃ",xyu:"ゅ",xyo:"ょ", xtu:"っ", ltu:"っ"
+    };
+
+    function toKatakanaFromHiragana(h){
+      return h.replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
+    }
+
+    function romajiToHiragana(s){
+      if(!s) return s;
+      s = s.toLowerCase();
+      s = s.replace(/n(?=(?!y)[^aiueo]|$)/g, "ん");
+      s = s.replace(/([^aiueon\W])\1/g, (_, c) => "っ" + c);
+      let out = "";
+      for(let i=0;i<s.length;){
+        if(!/[a-z]/.test(s[i])){ out += s[i++]; continue; }
+        const tri=s.slice(i,i+3), bi=s.slice(i,i+2), si=s.slice(i,i+1);
+        if(MAP[tri]){ out += MAP[tri]; i+=3; continue; }
+        if(MAP[bi]){ out += MAP[bi]; i+=2; continue; }
+        if(MAP[si]){ out += MAP[si]; i+=1; continue; }
+        out += s[i++];
+      }
+      return out;
+    }
+
+    // --- UI wiring ---
+    const $ = sel => document.querySelector(sel);
+    const input = $('#input');
+    const output = $('#output');
+    const mode = $('#mode');
+    const statusIn = $('#statusIn');
+    const statusOut = $('#statusOut');
+    const offlineState = $('#offlineState');
+
+    let raf; // debounce for mobile perf
+    function schedule(fn){ cancelAnimationFrame(raf); raf = requestAnimationFrame(fn); }
+
+    function update(){
+      const m = mode.value;
+      const src = input.value;
+      let kana = (m === 'none') ? src : romajiToHiragana(src);
+      if(m === 'katakana') kana = toKatakanaFromHiragana(kana);
+      output.value = kana;
+      statusIn.textContent = `Chars: ${src.length}`;
+      statusOut.textContent = (m==='hiragana') ? 'Hiragana mode' : (m==='katakana' ? 'Katakana mode' : 'No conversion');
+    }
+
+    input.addEventListener('input', ()=>schedule(update), {passive:true});
+    mode.addEventListener('change', update);
+    input.addEventListener('keydown', (e)=>{
+      if((e.ctrlKey||e.metaKey) && e.key==='Enter'){
+        navigator.clipboard?.writeText(output.value);
+        flash(offlineState, 'Copied output');
+      }
+    })
+
+    $('#clear').addEventListener('click', ()=>{ input.value=''; update(); });
+    $('#copyIn').addEventListener('click', ()=>{ navigator.clipboard?.writeText(input.value); flash(offlineState,'Copied input'); });
+    $('#copyOut').addEventListener('click', ()=>{ navigator.clipboard?.writeText(output.value); flash(offlineState,'Copied output'); });
+    $('#downloadOut').addEventListener('click', ()=>{
+      const blob = new Blob([output.value], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'kana.txt';
+      a.click();
+      setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    });
+
+    function flash(el, text){
+      const old = el.textContent; el.textContent = text; el.style.color = 'white';
+      setTimeout(()=>{ el.textContent = old; el.style.color=''; }, 1200);
+    }
+
+    // --- TTS (Web Speech API) ---
+    const speakBtn = $('#speak'), pauseBtn=$('#pause'), resumeBtn=$('#resume'), stopBtn=$('#stop');
+    const voiceSel = $('#voice'), rateEl=$('#rate'), pitchEl=$('#pitch');
+    const rateVal=$('#rateVal'), pitchVal=$('#pitchVal');
+    const speechState=$('#speechState');
+
+    let voices=[];
+    function loadVoices(){
+      voices = window.speechSynthesis.getVoices();
+      voiceSel.innerHTML = '';
+      // Prefer Japanese voices first
+      const sorted = voices.slice().sort((a,b)=>{
+        const aj = a.lang.includes('ja'), bj = b.lang.includes('ja');
+        if(aj!==bj) return aj? -1: 1;
+        return a.name.localeCompare(b.name);
+      });
+      sorted.forEach((v,i)=>{
+        const opt=document.createElement('option');
+        opt.value = v.name; opt.textContent = `${v.name} (${v.lang})${v.default?' • default':''}`;
+        voiceSel.appendChild(opt);
+      });
+    }
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    rateEl.addEventListener('input',()=>rateVal.textContent=Number(rateEl.value).toFixed(2));
+    pitchEl.addEventListener('input',()=>pitchVal.textContent=Number(pitchEl.value).toFixed(2));
+
+    function getSelectedVoice(){
+      const name = voiceSel.value;
+      return voices.find(v=>v.name===name) || voices.find(v=>/ja/i.test(v.lang)) || voices[0];
+    }
+
+    function speak(text){
+      if(!text) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const v = getSelectedVoice();
+      if(v) u.voice = v;
+      u.rate = parseFloat(rateEl.value);
+      u.pitch = parseFloat(pitchEl.value);
+      u.onstart = ()=> speechState.textContent='Speaking…';
+      u.onend = ()=> speechState.textContent='Done';
+      u.onerror = (e)=> { speechState.textContent='Error'; console.error(e); };
+      window.speechSynthesis.speak(u);
+    }
+
+    speakBtn.addEventListener('click', ()=> speak(output.value));
+    pauseBtn.addEventListener('click', ()=>{ window.speechSynthesis.pause(); speechState.textContent='Paused'; });
+    resumeBtn.addEventListener('click', ()=>{ window.speechSynthesis.resume(); speechState.textContent='Speaking…'; });
+    stopBtn.addEventListener('click', ()=>{ window.speechSynthesis.cancel(); speechState.textContent='Stopped'; });
+
+    // --- PWA offline with versioned cache & update prompt ---
+    (function initPWA(){
+      if(!('serviceWorker' in navigator)) { offlineState.textContent = 'No SW'; return; }
+
+      const APP_VER = 'v2.0.0'; // bump this to force an update
+
+      // dynamic manifest (works from file:// and static hosts)
+      const manifest = { name:'Romaji→Kana', short_name:'Kana', start_url:'.', display:'standalone', background_color:'#0b0f14', theme_color:'#0b0f14', icons:[] };
+      const manifestURL = URL.createObjectURL(new Blob([JSON.stringify(manifest)], {type:'application/json'}));
+      const link = document.createElement('link'); link.rel='manifest'; link.href=manifestURL; document.head.appendChild(link);
+
+      const swCode = `
+        const APP_VER='${APP_VER}';
+        const CACHE='kana-cache-'+APP_VER;
+        self.addEventListener('install', e=>{
+          e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./'])));
+          self.skipWaiting();
+        });
+        self.addEventListener('activate', e=>{
+          e.waitUntil(
+            caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('kana-cache-')&&k!==CACHE).map(k=>caches.delete(k))))
+          );
+          self.clients.claim();
+        });
+        self.addEventListener('fetch', e=>{
+          const url = new URL(e.request.url);
+          if(url.origin===location.origin){
+            e.respondWith(
+              caches.match(e.request).then(r=>r||fetch(e.request).then(resp=>{
+                const copy=resp.clone(); caches.open(CACHE).then(c=>c.put(e.request, copy)); return resp;
+              }).catch(()=>caches.match('./')))
+            );
+          }
+        });
+        // Let clients know a new SW took control
+        self.addEventListener('message', (e)=>{
+          if(e.data==='ping') e.source.postMessage({type:'pong', version:APP_VER});
+        });
+      `;
+      const swURL = URL.createObjectURL(new Blob([swCode], {type:'text/javascript'}));
+
+      navigator.serviceWorker.register(swURL).then(reg=>{
+        offlineState.textContent = 'Offline ready';
+        offlineState.style.color = '#6ee7b7';
+
+        function checkUpdate(){
+          if(!reg || !reg.waiting) return;
+          const banner = document.getElementById('updateBanner');
+          banner.style.display = 'flex';
+          document.getElementById('reloadNow').onclick = ()=>{ reg.waiting.postMessage({type:'SKIP_WAITING'}); location.reload(); };
+          document.getElementById('dismissBanner').onclick = ()=>{ banner.style.display='none'; };
+        }
+
+        // Listen for new workers becoming waiting
+        if (reg.installing || reg.waiting) checkUpdate();
+        reg.addEventListener('updatefound', ()=>{
+          const sw = reg.installing; if (!sw) return;
+          sw.addEventListener('statechange', ()=>{ if(sw.state==='installed') checkUpdate(); });
+        });
+
+      }).catch(()=>{
+        offlineState.textContent = 'SW failed';
+        offlineState.style.color = '#f87171';
+      });
+    })();
+
+    // init
+    update();
+  </script>
+</body>
+</html>
