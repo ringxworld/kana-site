@@ -4,29 +4,29 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0b0f14" />
-  <title>Romaji → かなカナ</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' ry='20' fill='%230b0f14'/><text x='50' y='70' font-size='60' text-anchor='middle' fill='%23e8eef7'>あ</text></svg>">
+  <title>Romaji → かなカナ (FF TTS Patch)</title>
   <style>
-    :root{--bg:#0b0f14;--panel:#111824;--muted:#152033;--text:#e8eef7;--sub:#a8b3c5;--acc:#7aa2ff;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--radius:16px;--pad:16px;--tap:48px}
-    *{box-sizing:border-box}html,body{height:100%}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif}
+    :root{--bg:#0b0f14;--panel:#111824;--muted:#152033;--text:#e8eef7;--sub:#a8b3c5;--acc:#7aa2ff;--ok:#22c55e;--warn:#f59e0b;--danger:#ef4444;--radius:16px;--pad:16px;--tap:44px}
+    *{box-sizing:border-box}html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,'Noto Sans',sans-serif}
     header{padding:20px var(--pad) 10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
     header h1{margin:0;font-size:20px;font-weight:700}
     header .badge{background:var(--muted);padding:6px 10px;border-radius:999px;color:var(--sub);font-size:12px}
     .container{padding:var(--pad);max-width:900px;margin:0 auto}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.5rem 0}
     textarea{width:100%;min-height:260px;background:#0a1220;color:var(--text);border:1px solid #1f2a3a;border-radius:12px;padding:14px;font-size:18px;line-height:1.7;resize:vertical}
-    button,select{appearance:none;border:1px solid #293241;background:#0f1725;color:var(--text);padding:12px 14px;border-radius:12px;font-weight:600;min-height:var(--tap)}
+    button,select{appearance:none;border:1px solid #293241;background:#0f1725;color:var(--text);padding:10px 14px;border-radius:12px;font-weight:600;min-height:var(--tap)}
     button.primary{background:linear-gradient(180deg,#486bff,#3a57d6);border:none}
     button.success{background:linear-gradient(180deg,#16a34a,#15803d);border:none}
     button:disabled{opacity:.6;cursor:not-allowed}
-    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:.5rem 0}
     .hint{color:var(--sub);font-size:12px}
     .status{font-size:12px;color:var(--sub)}
   </style>
 </head>
 <body>
-  <header><h1>Romaji → ひらがな / カタカナ</h1><span class="badge">Offline-ready</span></header>
+  <header><h1>Romaji → ひらがな / カタカナ</h1><span class="badge">Firefox TTS Patch</span></header>
   <div class="container">
-    <p>Type romaji and it will convert <em>in-place</em> to kana. Works offline. Text‑to‑speech is tuned for mobile. On Firefox Android, voices may be limited.</p>
+    <p>Inline conversion (same textbox). TTS included</p>
 
     <div class="row">
       <label for="mode" class="hint">Mode</label>
@@ -42,7 +42,7 @@
     <div class="status" id="ttsStatus">Speech: Locked (tap Enable)</div>
 
     <textarea id="input" placeholder="Type romaji here..."></textarea>
-    <div class="hint">Tips: double consonants → っ, 'n' before non‑vowel → ん, digraphs like sha/kyo/chu supported.</div>
+    <div class="hint">Tips: double consonants → っ, 'n' before non-vowel → ん, digraphs like sha/kyo/chu supported.</div>
   </div>
 
   <script>
@@ -53,7 +53,9 @@
     const voiceSel = document.getElementById('voice');
     const ttsStatus = document.getElementById('ttsStatus');
 
-    // --- Romaji → Kana ---
+    // =============================================================
+    // INLINE CONVERSION (Caret-safe + IME-safe)
+    // =============================================================
     const MAP = {
       kya:"きゃ",kyu:"きゅ",kyo:"きょ", gya:"ぎゃ",gyu:"ぎゅ",gyo:"ぎょ",
       sha:"しゃ",shu:"しゅ",sho:"しょ", ja:"じゃ",ju:"じゅ",jo:"じょ",
@@ -116,146 +118,164 @@
       return h.replace(/[ぁ-ゖ]/g, ch => String.fromCharCode(ch.charCodeAt(0) + 0x60));
     }
 
+    let composing = false;
+    function convertAll(text, m){
+      if (m === 'none') return text;
+      const hira = romajiToHiragana(text);
+      return m === 'katakana' ? toKatakanaFromHiragana(hira) : hira;
+    }
+    function convertPrefixLen(text, caret, m){
+      const prefix = text.slice(0, caret);
+      return convertAll(prefix, m).length;
+    }
     function update(){
       const m = mode.value;
       const before = input.value;
-      let kana = (m === 'none') ? before : romajiToHiragana(before);
-      if (m === 'katakana') kana = toKatakanaFromHiragana(kana);
       const start = input.selectionStart, end = input.selectionEnd;
-      input.value = kana;
-      const delta = kana.length - before.length;
-      try { input.setSelectionRange(Math.max(0, start + delta), Math.max(0, end + delta)); } catch {}
+      const converted = convertAll(before, m);
+      const newStart = convertPrefixLen(before, start, m);
+      const newEnd   = convertPrefixLen(before, end,   m);
+      if (before !== converted) input.value = converted;
+      try { input.setSelectionRange(newStart, newEnd); } catch {}
     }
 
-    // --- Text to Speech with explicit UX states (Firefox-hardened) ---
-let voices = []; 
-let voicesReady = false; 
-let ttsEnabled = false;
+    input.addEventListener('compositionstart', ()=>{ composing = true; });
+    input.addEventListener('compositionend',  ()=>{ composing = false; update(); });
+    input.addEventListener('input', ()=>{ if (!composing) update(); });
+    input.addEventListener('paste', ()=>{ setTimeout(()=>{ if (!composing) update(); }, 0); });
+    mode.addEventListener('change', update);
 
-const isFirefox = /firefox/i.test(navigator.userAgent);
+    // =============================================================
+    // TEXT-TO-SPEECH (Firefox-friendly unlock + fallback)
+    // =============================================================
+    let voices = [];
+    let voicesReady = false;
+    const isFirefox = /firefox/i.test(navigator.userAgent);
 
-function setTtsState(state, msg){
-  // state: 'locked' | 'ready' | 'unsupported' | 'error'
-  if(state==='ready'){
-    ttsInitBtn.textContent = 'Speech Ready ✓';
-    ttsInitBtn.classList.remove('primary');
-    ttsInitBtn.classList.add('success');
-    ttsInitBtn.setAttribute('aria-pressed','true');
-    ttsInitBtn.disabled = true;
-    speakBtn.disabled = false;
-  } else if(state==='locked'){
-    ttsInitBtn.textContent = 'Enable Speech';
-    ttsInitBtn.classList.add('primary');
-    ttsInitBtn.classList.remove('success');
-    ttsInitBtn.setAttribute('aria-pressed','false');
-    ttsInitBtn.disabled = false;
-    speakBtn.disabled = true;
-  } else if(state==='unsupported'){
-    ttsInitBtn.textContent = 'Speech Unsupported';
-    ttsInitBtn.disabled = true;
-    speakBtn.disabled = true;
-  } else if(state==='error'){
-    ttsInitBtn.textContent = 'Speech Error';
-    ttsInitBtn.disabled = false;
-    speakBtn.disabled = true;
-  }
-  if (msg) ttsStatus.textContent = 'Speech: ' + msg;
-}
-
-function populateVoices(){
-  voiceSel.innerHTML = '';
-  const sorted = voices.slice().sort((a,b)=>{
-    const aj = /ja/i.test(a.lang), bj = /ja/i.test(b.lang);
-    if (aj !== bj) return aj ? -1 : 1;
-    return a.name.localeCompare(b.name);
-  });
-  sorted.forEach(v=>{
-    const opt = document.createElement('option');
-    opt.value = v.name; 
-    opt.textContent = `${v.name} (${v.lang})${v.default?' • default':''}`;
-    voiceSel.appendChild(opt);
-  });
-}
-
-function tryLoadVoices(){
-  const v = window.speechSynthesis.getVoices();
-  if (!v || v.length === 0) return false;
-  voices = v; 
-  voicesReady = true; 
-  populateVoices(); 
-  return true;
-}
-
-// light audio nudge helps some browsers (including Firefox) unlock audio
-function unlockAudioGesture(){
-  try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
-    const o = ctx.createOscillator(); 
-    const g = ctx.createGain();
-    o.type='sine'; o.frequency.value=880; g.gain.value=0.001;
-    o.connect(g); g.connect(ctx.destination);
-    o.start(); setTimeout(()=>{ o.stop(); ctx.close(); }, 80);
-  }catch{}
-}
-
-function unlockSynth(cb){
-  const u = new SpeechSynthesisUtterance('\u200b'); // zero-width space
-  u.volume = 0.01; u.rate = 1; u.pitch = 1; u.lang = 'ja-JP';
-  u.onend = ()=> cb && cb();
-  try { window.speechSynthesis.speak(u); } catch { cb && cb(); }
-}
-
-window.speechSynthesis.onvoiceschanged = ()=>{
-  if (tryLoadVoices()) setTtsState('ready','Ready');
-};
-
-// Enable button: run all the unlock steps and poll longer on Firefox
-ttsInitBtn.addEventListener('click', ()=>{
-  if (!('speechSynthesis' in window)) return setTtsState('unsupported','Not available in this browser');
-  ttsEnabled = true;
-  unlockAudioGesture();
-  let attempts = 0;
-  const maxAttempts = isFirefox ? 20 : 10;  // poll a bit longer on Firefox
-  const timer = setInterval(()=>{
-    attempts++;
-    if (tryLoadVoices()) { clearInterval(timer); setTtsState('ready','Ready'); }
-    if (attempts >= maxAttempts) { 
-      clearInterval(timer);
-      // Even if no voice list, many Firefox installs can still speak with a lang
-      setTtsState('ready', voicesReady ? 'Ready' : 'Ready (no voice list, using ja-JP)');
+    function setTtsStatus(text, state){
+      ttsStatus.textContent = "Speech: " + text;
+      if (state === "ready") {
+        ttsInitBtn.textContent = "Speech Ready ✓";
+        ttsInitBtn.classList.remove("primary");
+        ttsInitBtn.classList.add("success");
+        ttsInitBtn.setAttribute("aria-pressed","true");
+        ttsInitBtn.disabled = true;
+        speakBtn.disabled = false;
+      } else if (state === "locked") {
+        ttsInitBtn.textContent = "Enable Speech";
+        ttsInitBtn.classList.add("primary");
+        ttsInitBtn.classList.remove("success");
+        ttsInitBtn.setAttribute("aria-pressed","false");
+        ttsInitBtn.disabled = false;
+        speakBtn.disabled = true;
+      } else if (state === "unsupported") {
+        ttsInitBtn.textContent = "Speech Unsupported";
+        ttsInitBtn.disabled = true;
+        speakBtn.disabled = true;
+      } else if (state === "error") {
+        ttsInitBtn.textContent = "Speech Error";
+        ttsInitBtn.disabled = false;
+        speakBtn.disabled = true;
+      }
     }
-  }, 150);
-  unlockSynth(()=> setTimeout(()=>{ if (tryLoadVoices()) setTtsState('ready','Ready'); }, 120));
-});
 
-function getSelectedVoice(){
-  const sel = voiceSel.value;
-  return voices.find(v=>v.name===sel) || voices.find(v=>/ja/i.test(v.lang)) || voices[0] || null;
-}
+    function populateVoices(){
+      voiceSel.innerHTML = "";
+      const list = voices.slice().sort((a,b)=>{
+        const aj = /ja/i.test(a.lang), bj = /ja/i.test(b.lang);
+        if (aj !== bj) return aj ? -1 : 1;
+        return (a.name||'').localeCompare(b.name||'');
+      });
+      list.forEach(v=>{
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = v.name + (v.lang? " ("+v.lang+")": "");
+        voiceSel.appendChild(opt);
+      });
+    }
 
-function speak(text){
-  if(!text) return;
-  if(!('speechSynthesis' in window)) { setTtsState('unsupported','Not available'); return; }
-  window.speechSynthesis.cancel();
+    function tryLoadVoices(){
+      const v = window.speechSynthesis.getVoices();
+      if (!v || v.length === 0) return false;
+      voices = v;
+      voicesReady = true;
+      populateVoices();
+      return true;
+    }
 
-  const u = new SpeechSynthesisUtterance(text);
-  const v = getSelectedVoice();
-  if (v) { u.voice = v; u.lang = v.lang || 'ja-JP'; }
-  else   { u.lang = 'ja-JP'; } // Firefox fallback when voices list is empty
+    // Lightweight audio context nudge to satisfy autoplay policies
+    function unlockAudioGesture(){
+      try{
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (!Ctx) return;
+        const ctx = new Ctx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.value = 0.001;
+        osc.frequency.value = 880;
+        osc.connect(gain).connect(ctx.destination);
+        osc.start();
+        setTimeout(()=>{ osc.stop(); ctx.close(); }, 80);
+      }catch{}
+    }
 
-  u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-  u.onerror = ()=> setTtsState('error','Playback error');
+    // Empty utterance to unlock speech; helps Firefox
+    function unlockSynth(cb){
+      try {
+        const u = new SpeechSynthesisUtterance('\u200b');
+        u.volume = 0.01; u.rate = 1; u.pitch = 1; u.lang = 'ja-JP';
+        u.onend = ()=> cb && cb();
+        speechSynthesis.speak(u);
+      } catch { cb && cb(); }
+    }
 
-  // Firefox generally ignores resume() here; keep it simple:
-  try { if (!isFirefox) window.speechSynthesis.resume(); } catch {}
+    window.speechSynthesis.onvoiceschanged = ()=>{
+      if (tryLoadVoices()) setTtsStatus("Ready", "ready");
+    };
 
-  window.speechSynthesis.speak(u);
-}
+    ttsInitBtn.addEventListener('click', ()=>{
+      if (!('speechSynthesis' in window)) return setTtsStatus("Not available in this browser", "unsupported");
+      unlockAudioGesture();
+      let tries = 0;
+      const maxTries = isFirefox ? 20 : 10; // poll longer on FF
+      const poll = setInterval(()=>{
+        tries++;
+        if (tryLoadVoices()) { clearInterval(poll); setTtsStatus("Ready", "ready"); }
+        if (tries >= maxTries) {
+          clearInterval(poll);
+          // Even without a list, FF can speak if lang is set
+          setTtsStatus(voicesReady ? "Ready" : "Ready (no list; using ja-JP)", "ready");
+        }
+      }, 150);
+      unlockSynth(()=> setTimeout(()=>{ if (tryLoadVoices()) setTtsStatus("Ready", "ready"); }, 120));
+    });
 
-speakBtn.addEventListener('click', ()=> speak(input.value));
+    function getSelectedVoice(){
+      const sel = voiceSel.value;
+      const list = window.speechSynthesis.getVoices();
+      return list.find(v => v.name === sel) ||
+             list.find(v => /ja/i.test(v.lang)) ||
+             list[0] || null;
+    }
 
-// initial state
-setTtsState('locked','Locked (tap Enable)');
+    function speak(text){
+      if (!text) return;
+      if (!('speechSynthesis' in window)) return setTtsStatus("Not available", "unsupported");
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      const v = getSelectedVoice();
+      if (v) { u.voice = v; u.lang = v.lang || 'ja-JP'; }
+      else   { u.lang = 'ja-JP'; } // FF fallback when list empty
+      u.rate = 1; u.pitch = 1; u.volume = 1;
+      u.onerror = ()=> setTtsStatus("Playback error", "error");
+      try { if (!isFirefox) window.speechSynthesis.resume(); } catch {}
+      window.speechSynthesis.speak(u);
+    }
+
+    speakBtn.addEventListener('click', ()=> speak(input.value));
+
+    // Initial states
+    setTtsStatus("Locked (tap Enable)", "locked");
     update();
   </script>
 </body>
