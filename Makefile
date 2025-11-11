@@ -204,32 +204,34 @@ fetch-skk:
 setup:
 	npm run setup
 
-# ---- CONFIG ----
+# ---- GitHub Pages staging from repo root index.html + public/* ----
 SRC_PUBLIC := public
+SRC_INDEX  := index.html
 OUT_DOCS   := docs
 
-# Optional: if you still want the fetch; leave commented if you prefer manual.
-# SKK_URL    := https://raw.githubusercontent.com/skk-dev/dict/master/SKK-JISYO.L
-
-.PHONY: pages-clean pages-stage pages-verify pages-open pages-deploy
+.PHONY: pages-clean pages-stage pages-verify pages-build pages-deploy
 
 pages-clean:
 	@echo "[pages] clean $(OUT_DOCS)"
 	@rm -rf "$(OUT_DOCS)"
 
 pages-stage:
-	@echo "[pages] staging from $(SRC_PUBLIC) -> $(OUT_DOCS)"
+	@echo "[pages] staging → $(OUT_DOCS)"
 	@mkdir -p "$(OUT_DOCS)"
+	# 1) copy root index.html
+	@cp "$(SRC_INDEX)" "$(OUT_DOCS)/index.html"
+	# 2) copy all runtime assets from public/
 	@cp -a "$(SRC_PUBLIC)/." "$(OUT_DOCS)/"
-	# ensure .nojekyll so GitHub doesn’t mangle vendor/ or files starting with underscores
+	# 3) ensure Pages doesn't run Jekyll transforms
 	@touch "$(OUT_DOCS)/.nojekyll"
-	# normalize index.html script/link paths to be relative to docs root
-	# (if your index.html already uses ./public/... this rewrites to ./)
-	@if grep -q 'src="./public/js/ime-glue.js"' "$(OUT_DOCS)/index.html"; then \
-	  sed -i.bak 's#src="./public/js/ime-glue.js"#src="./js/ime-glue.js"#' "$(OUT_DOCS)/index.html"; \
-	  sed -i.bak 's#href="./public/#href="./#g' "$(OUT_DOCS)/index.html"; \
-	  rm -f "$(OUT_DOCS)/index.html.bak"; \
-	fi
+	# 4) rewrite staged index.html to use relative paths under docs/
+	#    - script type="module" glue path -> ./js/ime-glue.js
+	#    - optional: strip any "./public/" prefixes that might still exist
+	@sed -i.bak 's#src="/js/ime-glue.js"#src="./js/ime-glue.js"#g' "$(OUT_DOCS)/index.html" || true
+	@sed -i.bak 's#src="./public/js/ime-glue.js"#src="./js/ime-glue.js"#g' "$(OUT_DOCS)/index.html" || true
+	@sed -i.bak 's#href="./public/#href="./#g' "$(OUT_DOCS)/index.html" || true
+	@sed -i.bak 's#src="./public/#src="./#g' "$(OUT_DOCS)/index.html" || true
+	@rm -f "$(OUT_DOCS)/index.html.bak"
 
 pages-verify:
 	@echo "[pages] verifying staged site"
@@ -242,12 +244,12 @@ pages-verify:
 	@head -c 3 "$(OUT_DOCS)/dict/SKK-JISYO.L" | grep -q ';;' || { echo "SKK looks wrong (not SKK text)"; exit 1; }
 	@echo "[pages] OK"
 
-# Convenience: stage + verify
+# convenience wrappers
 pages-build: pages-clean pages-stage pages-verify
 
-# Optional helper to commit & push the docs dir
 pages-deploy: pages-build
 	@git add "$(OUT_DOCS)"
 	@git commit -m "Pages deploy: update docs" || true
 	@git push
+	@echo
 	@echo "Now set GitHub Pages to serve from: main branch /docs"
