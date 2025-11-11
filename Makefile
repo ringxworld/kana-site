@@ -204,3 +204,50 @@ fetch-skk:
 setup:
 	npm run setup
 
+# ---- CONFIG ----
+SRC_PUBLIC := public
+OUT_DOCS   := docs
+
+# Optional: if you still want the fetch; leave commented if you prefer manual.
+# SKK_URL    := https://raw.githubusercontent.com/skk-dev/dict/master/SKK-JISYO.L
+
+.PHONY: pages-clean pages-stage pages-verify pages-open pages-deploy
+
+pages-clean:
+	@echo "[pages] clean $(OUT_DOCS)"
+	@rm -rf "$(OUT_DOCS)"
+
+pages-stage:
+	@echo "[pages] staging from $(SRC_PUBLIC) -> $(OUT_DOCS)"
+	@mkdir -p "$(OUT_DOCS)"
+	@cp -a "$(SRC_PUBLIC)/." "$(OUT_DOCS)/"
+	# ensure .nojekyll so GitHub doesn’t mangle vendor/ or files starting with underscores
+	@touch "$(OUT_DOCS)/.nojekyll"
+	# normalize index.html script/link paths to be relative to docs root
+	# (if your index.html already uses ./public/... this rewrites to ./)
+	@if grep -q 'src="./public/js/ime-glue.js"' "$(OUT_DOCS)/index.html"; then \
+	  sed -i.bak 's#src="./public/js/ime-glue.js"#src="./js/ime-glue.js"#' "$(OUT_DOCS)/index.html"; \
+	  sed -i.bak 's#href="./public/#href="./#g' "$(OUT_DOCS)/index.html"; \
+	  rm -f "$(OUT_DOCS)/index.html.bak"; \
+	fi
+
+pages-verify:
+	@echo "[pages] verifying staged site"
+	@test -f "$(OUT_DOCS)/index.html" || { echo "missing docs/index.html"; exit 1; }
+	@test -f "$(OUT_DOCS)/js/ime-glue.js" || { echo "missing docs/js/ime-glue.js"; exit 1; }
+	@test -f "$(OUT_DOCS)/js/ime-worker.js" || { echo "missing docs/js/ime-worker.js"; exit 1; }
+	@test -f "$(OUT_DOCS)/vendor/kuromoji/kuromoji.js" || { echo "missing docs/vendor/kuromoji/kuromoji.js"; exit 1; }
+	@test -f "$(OUT_DOCS)/vendor/ipadic/base.dat.gz" || { echo "missing docs/vendor/ipadic/base.dat.gz"; exit 1; }
+	@test -f "$(OUT_DOCS)/dict/SKK-JISYO.L" || { echo "missing docs/dict/SKK-JISYO.L"; exit 1; }
+	@head -c 3 "$(OUT_DOCS)/dict/SKK-JISYO.L" | grep -q ';;' || { echo "SKK looks wrong (not SKK text)"; exit 1; }
+	@echo "[pages] OK"
+
+# Convenience: stage + verify
+pages-build: pages-clean pages-stage pages-verify
+
+# Optional helper to commit & push the docs dir
+pages-deploy: pages-build
+	@git add "$(OUT_DOCS)"
+	@git commit -m "Pages deploy: update docs" || true
+	@git push
+	@echo "Now set GitHub Pages to serve from: main branch /docs"
