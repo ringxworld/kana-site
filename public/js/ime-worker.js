@@ -1,145 +1,143 @@
-(function () {
-  const OrigXHR = self.XMLHttpRequest;
-  function PatchedXHR() {
-    const xhr = new OrigXHR();
-    let _url = '';
-    const origOpen = xhr.open;
-    xhr.open = function (method, url) {
-      _url = url;
-      return origOpen.apply(xhr, arguments);
-    };
-    xhr.addEventListener('load', function () {
-      try {
-        if (typeof _url === 'string' && _url.includes('/vendor/ipadic/')) {
-          // Kuromoji asks for ArrayBuffer. Peek at a few bytes.
-          let b0 = -1,
-            b1 = -1,
-            preview = '';
-          if (xhr.response instanceof ArrayBuffer) {
-            const u8 = new Uint8Array(xhr.response);
-            b0 = u8[0];
-            b1 = u8[1];
-            preview = String.fromCharCode(...u8.slice(0, 16)).replace(/\n/g, ' ');
-          } else if (typeof xhr.response === 'string') {
-            preview = xhr.response.slice(0, 32).replace(/\n/g, ' ');
-          }
-          postMessage({
-            type: 'log',
-            msg: `[kuromoji XHR] ${_url} -> status ${xhr.status}, bytes0=${b0},${b1} preview="${preview}"`,
-          });
-        }
-      } catch (_) {}
-    });
-    return xhr;
-  }
-  PatchedXHR.UNSENT = OrigXHR.UNSENT;
-  PatchedXHR.OPENED = OrigXHR.OPENED;
-  PatchedXHR.HEADERS_RECEIVED = OrigXHR.HEADERS_RECEIVED;
-  PatchedXHR.LOADING = OrigXHR.LOADING;
-  PatchedXHR.DONE = OrigXHR.DONE;
-  PatchedXHR.prototype = OrigXHR.prototype;
-  self.XMLHttpRequest = PatchedXHR;
-})();
+// public/js/ime-worker.js
+// Classic Web Worker for JP IME: loads kuromoji, IPADIC, and SKK; serves suggestions.
+
 let tokenizer = null;
-let skkMap = new Map();
-let userCounts = Object.create(null);
+let skkMap = new Map();                 // Map<reading (hiragana), string[]>
+let userCounts = Object.create(null);   // "reading|kanji" -> freq
 
-function log(msg) {
-  postMessage({ type: 'log', msg });
+function log(msg) { postMessage({ type: 'log', msg }); }
+function err(where, e) { postMessage({ type: 'error', where, message: String(e && e.stack ? e.stack : e) }); }
+
+// --- helpers ---
+function hira(str) {
+  return (str || '').replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
 }
-
 function joinDicPath(dicPath, filename) {
-  if (/^https?:\/\//i.test(dicPath)) {
-    // absolute URL base
-    return new URL(filename, dicPath).toString();
-  }
-  // treat as path (ensure one trailing slash)
-  if (!dicPath.endsWith('/')) dicPath += '/';
-  return dicPath + filename; // e.g. "/vendor/ipadic/base.dat.gz"
+  // dicPath may be an absolute URL or a root-relative path ("/vendor/ipadic/")
+  if (/^https?:\/\//i.test(dicPath)) return new URL(filename, dicPath).toString();
+  // path join (ensure one trailing slash)
+  return (dicPath.endsWith('/') ? dicPath : dicPath + '/') + filename;
+}
+function rerank(reading, list) {
+  const scored = list.map(w => ({ w, s: (userCounts[reading + '|' + w] || 0) }));
+  scored.sort((a, b) => b.s - a.s);
+  return scored.map(x => x.w);
 }
 
+// --- INIT ---
 async function init({ skkPath, kuromojiPath, ipadicPath }) {
   try {
-    postMessage({ type:'log', msg:`[init] ${kuromojiPath} | ${ipadicPath} | ${skkPath}` });
+    log(`[init] kuromoji=${kuromojiPath} | ipadic=${ipadicPath} | skk=${skkPath}`);
 
+    // 0) Load kuromoji in classic worker
     importScripts(kuromojiPath);
-    if (typeof kuromoji === 'undefined') throw new Error('kuromoji undefined after importScripts');
+    if (typeof kuromoji === 'undefined') throw new Error('kuromoji undefined after importScripts()');
 
-    // Preflight ALL the ipadic blobs (allow decompressed bytes; reject HTML/empty)
+    // 1) Verify IPADIC blobs are accessible and not HTML (allow already-decompressed bytes)
     const required = [
-      'base.dat.gz','cc.dat.gz','check.dat.gz',
-      'tid.dat.gz','tid_map.dat.gz','tid_pos.dat.gz',
-      'unk.dat.gz','unk_char.dat.gz','unk_compat.dat.gz',
-      'unk_invoke.dat.gz','unk_map.dat.gz','unk_pos.dat.gz',
+      'base.dat.gz', 'cc.dat.gz', 'check.dat.gz',
+      'tid.dat.gz', 'tid_map.dat.gz', 'tid_pos.dat.gz',
+      'unk.dat.gz', 'unk_char.dat.gz', 'unk_compat.dat.gz',
+      'unk_invoke.dat.gz', 'unk_map.dat.gz', 'unk_pos.dat.gz',
     ];
     for (const name of required) {
       const url = joinDicPath(ipadicPath, name);
       const resp = await fetch(url, { cache: 'no-store' });
       if (!resp.ok) throw new Error(`[ipadic] ${name} -> ${resp.status} ${resp.statusText}`);
       const buf = await resp.arrayBuffer();
-      const u8  = new Uint8Array(buf);
+      const u8 = new Uint8Array(buf);
       if (u8.length < 16) throw new Error(`[ipadic] too small: ${url} (${u8.length} bytes)`);
-      const looksHTML = (u8[0] === 0x3c /* '<' */) && (u8[1] === 0x21 /* '!' */ || u8[1] === 0x68 /* 'h' */);
+      // If HTML slipped in, it will start with "<!" or "<h"
+      const b0 = u8[0], b1 = u8[1];
+      const looksHTML = (b0 === 0x3c /* '<' */) && (b1 === 0x21 /* '!' */ || b1 === 0x68 /* 'h' */);
       if (looksHTML) {
-        const preview = String.fromCharCode(...u8.slice(0, 32)).replace(/\n/g,' ');
+        const preview = String.fromCharCode(...u8.slice(0, 32)).replace(/\n/g, ' ');
         throw new Error(`[ipadic] looks like HTML: ${url} -> "${preview}"`);
       }
-      postMessage({ type:'log', msg:`[ipadic OK] ${name} (${u8.length} bytes)` });
+      log(`[ipadic OK] ${name} (${u8.length} bytes)`);
     }
 
-    // Build tokenizer (Kuromoji accepts either absolute URL or path for dicPath)
+    // 2) Build kuromoji tokenizer
     tokenizer = await new Promise((resolve, reject) => {
-      kuromoji.builder({ dicPath: ipadicPath }).build((err, t) => err ? reject(err) : resolve(t));
+      kuromoji.builder({ dicPath: ipadicPath }).build((e, t) => e ? reject(e) : resolve(t));
     });
 
-    // Fetch + parse SKK (unchanged)
-    const res = await fetch(skkPath, { cache:'no-store' });
-    if (!res.ok) throw new Error(`SKK fetch -> ${res.status} ${res.statusText}`);
-    const text = await res.text();
-    if (/<!DOCTYPE html>/i.test(text)) throw new Error('SKK looks like HTML');
+    // 3) Fetch + decode SKK robustly (UTF-8, else EUC-JP)
+    const skkResp = await fetch(skkPath, { cache: 'no-store' });
+    if (!skkResp.ok) throw new Error(`SKK fetch -> ${skkResp.status} ${skkResp.statusText}`);
+    const skkBuf = await skkResp.arrayBuffer();
 
+    let text = '';
+    // try UTF-8 first
+    try { text = new TextDecoder('utf-8', { fatal: true }).decode(skkBuf); } catch {}
+    const looksHtml = text && /^<!doctype html>/i.test(text.slice(0, 40));
+    const looksSkk  = text && /^;;/.test(text.slice(0, 4));
+    if (!looksSkk || looksHtml) {
+      // fallback to EUC-JP (common for SKK dictionaries)
+      try {
+        text = new TextDecoder('euc-jp', { fatal: true }).decode(skkBuf);
+      } catch {
+        throw new Error('SKK decode failed (neither UTF-8 nor EUC-JP)');
+      }
+    }
+    if (!/^;;/.test(text)) throw new Error('SKK header missing after decode');
+
+    // 4) Parse SKK into map
     skkMap = new Map();
-    for (const line of text.split(/\r?\n/)) {
+    const lines = text.split(/\r?\n/);
+    for (const line of lines) {
       if (!line || line[0] === ';') continue;
-      const m = line.match(/^([^\s]+)\s+\/(.+)\/\s*$/);
+      // <yomi><spaces>/<cand1/ cand2/ ...>/
+      const m = line.match(/^([^\s]+)\s+\/(.+?)\/\s*$/);
       if (!m) continue;
-      const yomi  = m[1];
-      const items = m[2].split('/').map(s => s.split(';')[0].trim()).filter(Boolean);
-      if (!items.length) continue;
+
+      const yomi = hira(m[1]);
       const arr = skkMap.get(yomi) || [];
-      for (const c of items) if (!arr.includes(c)) arr.push(c);
-      skkMap.set(yomi, arr);
+      for (const raw of m[2].split('/')) {
+        const cand = raw.split(';')[0].trim();   // strip per-candidate comments like ";freq"
+        if (cand && !arr.includes(cand)) arr.push(cand);
+      }
+      if (arr.length) skkMap.set(yomi, arr);
     }
 
-    postMessage({ type:'ready', stats:{ entries: skkMap.size } });
+    // debug probes
+    log(`[skk] entries=${skkMap.size}`);
+    log(`[skk] かける -> ${(skkMap.get('かける') || []).length}`);
+    log(`[skk] する   -> ${(skkMap.get('する')   || []).length}`);
+
+    postMessage({ type: 'ready', stats: { entries: skkMap.size } });
   } catch (e) {
-    postMessage({ type:'error', where:'init', message: String(e) });
+    err('init', e);
   }
 }
 
-function rerank(reading, list) {
-  const scored = list.map((w) => ({ w, s: userCounts[reading + '|' + w] || 0 }));
-  scored.sort((a, b) => b.s - a.s);
-  return scored.map((x) => x.w);
-}
-
+// --- SUGGEST ---
 function onSuggest(m) {
   try {
     let reading = m.reading || '';
-    if (!reading && m.text) {
-      const mm = m.text.match(/([ぁ-ゖー]+)$/);
-      if (mm) reading = mm[1];
+    let srcText = m.text || '';
+
+    // Extract trailing kana from text if reading not provided
+    if (!reading && srcText) {
+      const mm = srcText.match(/([ぁ-ゔ゛゜ーァ-ヺ・]+)$/);
+      if (mm) reading = hira(mm[1]);   // normalize katakana → hiragana
     }
-    if (!reading || reading.length < 2) return;
+
+    log(`[suggest] text="${srcText}" reading="${reading}"`);
+    if (!reading || reading.length < 1) return;
+
     const base = skkMap.get(reading) || [];
+    log(`[suggest] candidates=${base.length} for "${reading}"`);
     if (!base.length) return;
+
     const list = rerank(reading, base).slice(0, 20);
     postMessage({ type: 'suggest', token: { reading }, candidates: list });
   } catch (e) {
-    postMessage({ type: 'error', where: 'suggest', message: String(e) });
+    err('suggest', e);
   }
 }
 
+// --- COMMIT (simple learning -> rerank) ---
 function onCommit(m) {
   try {
     const { reading, kanji } = m;
@@ -148,13 +146,14 @@ function onCommit(m) {
     userCounts[key] = (userCounts[key] || 0) + 1;
     postMessage({ type: 'learn', key, value: userCounts[key] });
   } catch (e) {
-    postMessage({ type: 'error', where: 'commit', message: String(e) });
+    err('commit', e);
   }
 }
 
+// --- message pump ---
 self.addEventListener('message', (e) => {
   const m = e.data || {};
-  if (m.type === 'init') return init(m);
+  if (m.type === 'init')    return init(m);
   if (m.type === 'suggest') return onSuggest(m);
-  if (m.type === 'commit') return onCommit(m);
+  if (m.type === 'commit')  return onCommit(m);
 });

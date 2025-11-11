@@ -18,6 +18,12 @@
     }
     imeWorker?.postMessage(payload);
   };
+  const __origReq = window.IME.requestSuggest;
+  window.IME.requestSuggest = (text) => {
+    const val = text ?? document.getElementById('input')?.value ?? '';
+    console.log('[IME] glue → requestSuggest', JSON.stringify(val.slice(-20)));
+    return __origReq(val);
+  };
 
   // Popup UI
   const popup = document.createElement('div');
@@ -161,7 +167,6 @@
   const SKK_URL = new URL('../dict/SKK-JISYO.L', here).href;
   const KUROMOJI_URL = new URL('../vendor/kuromoji/kuromoji.js', here).href;
   const IPADIC_URL = new URL('../vendor/ipadic/', here).href; // trailing slash
-  
 
   imeWorker.onmessage = (e) => {
     const msg = e.data || {};
@@ -180,6 +185,7 @@
       return;
     }
     if (msg.type === 'suggest') {
+      console.log('[IME] glue ← suggest', msg.token?.reading, 'n=', msg.candidates?.length);
       renderPopup(msg.token?.reading || '', msg.candidates || []);
       return;
     }
