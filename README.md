@@ -38,3 +38,4 @@ To run it locally:
 git clone https://github.com/ringxworld/kana-site.git
 cd kana-site
 open index.html  # or double-click it
+```
