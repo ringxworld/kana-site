@@ -1,11 +1,28 @@
 {
-  "name": "kana-site",
+  "name": "kana-kanji-ime",
   "version": "1.0.0",
-  "description": "Offline-ready Romaji → Kana converter (single-page PWA)",
-  "author": "ringxworld",
-  "license": "MIT",
+  "description": "Browser Japanese IME using kuromoji + SKK dictionary",
+  "type": "module",
   "scripts": {
-    "start": "npx serve .",
-    "format": "prettier --write ."
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "vendor:sync": "npx shx mkdir -p public/vendor/kuromoji public/vendor/ipadic && npx shx cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/ && npx shx cp -r node_modules/kuromoji/dict/* public/vendor/ipadic/",
+    "fetch:skk": "npx shx mkdir -p public/dict && curl -L -o public/dict/SKK-JISYO.L https://skk-dev.github.io/dict/SKK-JISYO.L",
+    "setup": "npm run vendor:sync && npm run fetch:skk",
+    "format": "prettier --write .",
+    "lint": "eslint . --fix"
+  },
+  "dependencies": {
+    "kuromoji": "^0.1.2",
+    "wanakana": "^5.1.0"
+  },
+  "devDependencies": {
+    "connect-history-api-fallback": "^2.0.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.0.0",
+    "serve-static": "^2.2.0",
+    "shx": "^0.4.0",
+    "vite": "^5.0.0"
   }
 }
