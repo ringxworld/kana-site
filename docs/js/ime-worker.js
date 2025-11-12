@@ -2,15 +2,21 @@
 // Classic Web Worker for JP IME: loads kuromoji, IPADIC, and SKK; serves suggestions.
 
 let tokenizer = null;
-let skkMap = new Map();                 // Map<reading (hiragana), string[]>
-let userCounts = Object.create(null);   // "reading|kanji" -> freq
+let skkMap = new Map(); // Map<reading (hiragana), string[]>
+let userCounts = Object.create(null); // "reading|kanji" -> freq
 
-function log(msg) { postMessage({ type: 'log', msg }); }
-function err(where, e) { postMessage({ type: 'error', where, message: String(e && e.stack ? e.stack : e) }); }
+function log(msg) {
+  postMessage({ type: 'log', msg });
+}
+function err(where, e) {
+  postMessage({ type: 'error', where, message: String(e && e.stack ? e.stack : e) });
+}
 
 // --- helpers ---
 function hira(str) {
-  return (str || '').replace(/[\u30a1-\u30f6]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  return (str || '').replace(/[\u30a1-\u30f6]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0x60)
+  );
 }
 function joinDicPath(dicPath, filename) {
   // dicPath may be an absolute URL or a root-relative path ("/vendor/ipadic/")
@@ -19,9 +25,9 @@ function joinDicPath(dicPath, filename) {
   return (dicPath.endsWith('/') ? dicPath : dicPath + '/') + filename;
 }
 function rerank(reading, list) {
-  const scored = list.map(w => ({ w, s: (userCounts[reading + '|' + w] || 0) }));
+  const scored = list.map((w) => ({ w, s: userCounts[reading + '|' + w] || 0 }));
   scored.sort((a, b) => b.s - a.s);
-  return scored.map(x => x.w);
+  return scored.map((x) => x.w);
 }
 
 // --- INIT ---
@@ -31,14 +37,23 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
 
     // 0) Load kuromoji in classic worker
     importScripts(kuromojiPath);
-    if (typeof kuromoji === 'undefined') throw new Error('kuromoji undefined after importScripts()');
+    if (typeof kuromoji === 'undefined')
+      throw new Error('kuromoji undefined after importScripts()');
 
     // 1) Verify IPADIC blobs are accessible and not HTML (allow already-decompressed bytes)
     const required = [
-      'base.dat.gz', 'cc.dat.gz', 'check.dat.gz',
-      'tid.dat.gz', 'tid_map.dat.gz', 'tid_pos.dat.gz',
-      'unk.dat.gz', 'unk_char.dat.gz', 'unk_compat.dat.gz',
-      'unk_invoke.dat.gz', 'unk_map.dat.gz', 'unk_pos.dat.gz',
+      'base.dat.gz',
+      'cc.dat.gz',
+      'check.dat.gz',
+      'tid.dat.gz',
+      'tid_map.dat.gz',
+      'tid_pos.dat.gz',
+      'unk.dat.gz',
+      'unk_char.dat.gz',
+      'unk_compat.dat.gz',
+      'unk_invoke.dat.gz',
+      'unk_map.dat.gz',
+      'unk_pos.dat.gz',
     ];
     for (const name of required) {
       const url = joinDicPath(ipadicPath, name);
@@ -48,8 +63,9 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
       const u8 = new Uint8Array(buf);
       if (u8.length < 16) throw new Error(`[ipadic] too small: ${url} (${u8.length} bytes)`);
       // If HTML slipped in, it will start with "<!" or "<h"
-      const b0 = u8[0], b1 = u8[1];
-      const looksHTML = (b0 === 0x3c /* '<' */) && (b1 === 0x21 /* '!' */ || b1 === 0x68 /* 'h' */);
+      const b0 = u8[0],
+        b1 = u8[1];
+      const looksHTML = b0 === 0x3c /* '<' */ && (b1 === 0x21 /* '!' */ || b1 === 0x68); /* 'h' */
       if (looksHTML) {
         const preview = String.fromCharCode(...u8.slice(0, 32)).replace(/\n/g, ' ');
         throw new Error(`[ipadic] looks like HTML: ${url} -> "${preview}"`);
@@ -59,7 +75,7 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
 
     // 2) Build kuromoji tokenizer
     tokenizer = await new Promise((resolve, reject) => {
-      kuromoji.builder({ dicPath: ipadicPath }).build((e, t) => e ? reject(e) : resolve(t));
+      kuromoji.builder({ dicPath: ipadicPath }).build((e, t) => (e ? reject(e) : resolve(t)));
     });
 
     // 3) Fetch + decode SKK robustly (UTF-8, else EUC-JP)
@@ -69,9 +85,11 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
 
     let text = '';
     // try UTF-8 first
-    try { text = new TextDecoder('utf-8', { fatal: true }).decode(skkBuf); } catch {}
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(skkBuf);
+    } catch {}
     const looksHtml = text && /^<!doctype html>/i.test(text.slice(0, 40));
-    const looksSkk  = text && /^;;/.test(text.slice(0, 4));
+    const looksSkk = text && /^;;/.test(text.slice(0, 4));
     if (!looksSkk || looksHtml) {
       // fallback to EUC-JP (common for SKK dictionaries)
       try {
@@ -94,7 +112,7 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
       const yomi = hira(m[1]);
       const arr = skkMap.get(yomi) || [];
       for (const raw of m[2].split('/')) {
-        const cand = raw.split(';')[0].trim();   // strip per-candidate comments like ";freq"
+        const cand = raw.split(';')[0].trim(); // strip per-candidate comments like ";freq"
         if (cand && !arr.includes(cand)) arr.push(cand);
       }
       if (arr.length) skkMap.set(yomi, arr);
@@ -103,7 +121,7 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
     // debug probes
     log(`[skk] entries=${skkMap.size}`);
     log(`[skk] かける -> ${(skkMap.get('かける') || []).length}`);
-    log(`[skk] する   -> ${(skkMap.get('する')   || []).length}`);
+    log(`[skk] する   -> ${(skkMap.get('する') || []).length}`);
 
     postMessage({ type: 'ready', stats: { entries: skkMap.size } });
   } catch (e) {
@@ -115,25 +133,46 @@ async function init({ skkPath, kuromojiPath, ipadicPath }) {
 function onSuggest(m) {
   try {
     let reading = m.reading || '';
-    let srcText = m.text || '';
+    const srcText = m.text || '';
 
-    // Extract trailing kana from text if reading not provided
+    // 1) If no explicit reading, grab the trailing kana span (hiragana or katakana)
     if (!reading && srcText) {
-      const mm = srcText.match(/([ぁ-ゔ゛゜ーァ-ヺ・]+)$/);
-      if (mm) reading = hira(mm[1]);   // normalize katakana → hiragana
+      const tail = srcText.match(/([ぁ-ゟーァ-ヿ・]+)$/); // any JP kana tail
+      if (tail) reading = tail[1];
     }
 
-    log(`[suggest] text="${srcText}" reading="${reading}"`);
-    if (!reading || reading.length < 1) return;
+    // 2) If the tail contains ANY katakana, do NOT suggest kanji
+    //    (users writing in katakana usually don't want kanji suggestions)
+    const hasKatakana = /[\u30A1-\u30FA\u30FC]/.test(reading); // includes long vowel mark
+    if (hasKatakana) {
+      postMessage({ type: 'log', msg: `[suggest] skipped (katakana): "${reading}"` });
+      return;
+    }
+
+    // 3) Proceed only with hiragana; normalize (no-op for hiragana)
+    if (!/[\u3041-\u3096]/.test(reading)) {
+      // no hiragana at end -> nothing to do
+      postMessage({ type: 'log', msg: `[suggest] no hiragana tail in "${srcText}"` });
+      return;
+    }
+
+    // normalize any stray katakana to hiragana (shouldn't happen after the guard)
+    reading = reading.replace(/[\u30A1-\u30F6]/g, (ch) =>
+      String.fromCharCode(ch.charCodeAt(0) - 0x60)
+    );
+
+    postMessage({ type: 'log', msg: `[suggest] reading(hira)="${reading}"` });
 
     const base = skkMap.get(reading) || [];
-    log(`[suggest] candidates=${base.length} for "${reading}"`);
-    if (!base.length) return;
+    if (!base.length) {
+      postMessage({ type: 'log', msg: `[suggest] candidates=0 for "${reading}"` });
+      return;
+    }
 
     const list = rerank(reading, base).slice(0, 20);
     postMessage({ type: 'suggest', token: { reading }, candidates: list });
   } catch (e) {
-    err('suggest', e);
+    postMessage({ type: 'error', where: 'suggest', message: String(e) });
   }
 }
 
@@ -153,7 +192,7 @@ function onCommit(m) {
 // --- message pump ---
 self.addEventListener('message', (e) => {
   const m = e.data || {};
-  if (m.type === 'init')    return init(m);
+  if (m.type === 'init') return init(m);
   if (m.type === 'suggest') return onSuggest(m);
-  if (m.type === 'commit')  return onCommit(m);
+  if (m.type === 'commit') return onCommit(m);
 });
