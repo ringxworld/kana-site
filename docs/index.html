@@ -141,429 +141,60 @@
       <div class="status" id="ttsStatus">Speech: Locked (tap Enable)</div>
 
       <textarea id="input" class="jp-ime" placeholder="Type romaji here..."></textarea>
-      <script type="module" src="./js/ime-glue.js"></script>
       <div class="hint">
         Tips: double consonants → っ, 'n' before non-vowel → ん, digraphs like sha/kyo/chu
         supported.
       </div>
     </div>
+    <script src="./js/kana.js"></script>
+    <script type="module" src="./js/ime-glue.js"></script>
+    <script src="./js/tts.js"></script>
+
     <script>
-      const input = document.getElementById('input');
-      const mode = document.getElementById('mode');
-      const speakBtn = document.getElementById('speak');
-      const ttsInitBtn = document.getElementById('ttsInit');
-      const voiceSel = document.getElementById('voice');
-      const ttsStatus = document.getElementById('ttsStatus');
-
-      // =============================================================
-      // INLINE CONVERSION (Caret-safe + IME-safe)
-      // =============================================================
-      const MAP = {
-        kya: 'きゃ',
-        kyu: 'きゅ',
-        kyo: 'きょ',
-        gya: 'ぎゃ',
-        gyu: 'ぎゅ',
-        gyo: 'ぎょ',
-        sha: 'しゃ',
-        shu: 'しゅ',
-        sho: 'しょ',
-        ja: 'じゃ',
-        ju: 'じゅ',
-        jo: 'じょ',
-        cha: 'ちゃ',
-        chu: 'ちゅ',
-        cho: 'ちょ',
-        nya: 'にゃ',
-        nyu: 'にゅ',
-        nyo: 'にょ',
-        hya: 'ひゃ',
-        hyu: 'ひゅ',
-        hyo: 'ひょ',
-        mya: 'みゃ',
-        myu: 'みゅ',
-        myo: 'みょ',
-        rya: 'りゃ',
-        ryu: 'りゅ',
-        ryo: 'りょ',
-        bya: 'びゃ',
-        byu: 'びゅ',
-        byo: 'びょ',
-        pya: 'ぴゃ',
-        pyu: 'ぴゅ',
-        pyo: 'ぴょ',
-        shi: 'し',
-        chi: 'ち',
-        tsu: 'つ',
-        fu: 'ふ',
-        ji: 'じ',
-        di: 'ぢ',
-        du: 'づ',
-        a: 'あ',
-        i: 'い',
-        u: 'う',
-        e: 'え',
-        o: 'お',
-        ka: 'か',
-        ki: 'き',
-        ku: 'く',
-        ke: 'け',
-        ko: 'こ',
-        ga: 'が',
-        gi: 'ぎ',
-        gu: 'ぐ',
-        ge: 'げ',
-        go: 'ご',
-        sa: 'さ',
-        si: 'し',
-        su: 'す',
-        se: 'せ',
-        so: 'そ',
-        za: 'ざ',
-        zi: 'じ',
-        zu: 'ず',
-        ze: 'ぜ',
-        zo: 'ぞ',
-        ta: 'た',
-        ti: 'ち',
-        tu: 'つ',
-        te: 'て',
-        to: 'と',
-        da: 'だ',
-        de: 'で',
-        do: 'ど',
-        na: 'な',
-        ni: 'に',
-        nu: 'ぬ',
-        ne: 'ね',
-        no: 'の',
-        ha: 'は',
-        hi: 'ひ',
-        he: 'へ',
-        ho: 'ほ',
-        ba: 'ば',
-        bi: 'び',
-        bu: 'ぶ',
-        be: 'べ',
-        bo: 'ぼ',
-        pa: 'ぱ',
-        pi: 'ぴ',
-        pu: 'ぷ',
-        pe: 'ぺ',
-        po: 'ぽ',
-        ma: 'ま',
-        mi: 'み',
-        mu: 'む',
-        me: 'め',
-        mo: 'も',
-        ya: 'や',
-        yu: 'ゆ',
-        yo: 'よ',
-        ra: 'ら',
-        ri: 'り',
-        ru: 'る',
-        re: 'れ',
-        ro: 'ろ',
-        wa: 'わ',
-        wi: 'うぃ',
-        we: 'うぇ',
-        wo: 'を',
-        fa: 'ふぁ',
-        fi: 'ふぃ',
-        fe: 'ふぇ',
-        fo: 'ふぉ',
-        va: 'ゔぁ',
-        vi: 'ゔぃ',
-        vu: 'ゔ',
-        ve: 'ゔぇ',
-        vo: 'ゔぉ',
-        xa: 'ぁ',
-        xi: 'ぃ',
-        xu: 'ぅ',
-        xe: 'ぇ',
-        xo: 'ぉ',
-        xya: 'ゃ',
-        xyu: 'ゅ',
-        xyo: 'ょ',
-        xtu: 'っ',
-        ltu: 'っ',
-        n: 'ん',
-      };
-      const VOWELS = new Set(['a', 'i', 'u', 'e', 'o']);
-      function isLetter(c) {
-        return /^[a-z]$/i.test(c);
-      }
-      function isConsonant(c) {
-        return isLetter(c) && !VOWELS.has(c.toLowerCase());
-      }
-
-      function romajiToHiragana(s) {
-        s = (s || '').toLowerCase();
-        let out = '';
-        let i = 0;
-        while (i < s.length) {
-          const c = s[i];
-          if (!/[a-z]/.test(c)) {
-            out += s[i++];
-            continue;
-          }
-          if (i + 1 < s.length && s[i] === s[i + 1] && isConsonant(s[i]) && s[i] !== 'n') {
-            out += 'っ';
-            i += 1;
-            continue;
-          }
-          if (c === 'n') {
-            const nxt = s[i + 1];
-            if (!nxt || (!VOWELS.has(nxt) && nxt !== 'y')) {
-              out += 'ん';
-              i += 1;
-              continue;
-            }
-          }
-          const tri = s.slice(i, i + 3);
-          const bi = s.slice(i, i + 2);
-          const si = s.slice(i, i + 1);
-          if (MAP[tri]) {
-            out += MAP[tri];
-            i += 3;
-            continue;
-          }
-          if (MAP[bi]) {
-            out += MAP[bi];
-            i += 2;
-            continue;
-          }
-          if (MAP[si]) {
-            out += MAP[si];
-            i += 1;
-            continue;
-          }
-          out += s[i];
-          i += 1;
+      // Minimal adapter: converts as you type using window.Kana; respects IME
+      (function () {
+        const input = document.getElementById('input');
+        const modeEl = document.getElementById('mode');
+        if (!input || !modeEl) return;
+        let composing = false;
+        function mode() {
+          const v = (modeEl.value || 'hiragana').toLowerCase();
+          return v === 'katakana' || v === 'hiragana' || v === 'none' ? v : 'hiragana';
         }
-        return out;
-      }
-
-      function toKatakanaFromHiragana(h) {
-        return h.replace(/[ぁ-ゖ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + 0x60));
-      }
-
-      let composing = false;
-      function convertAll(text, m) {
-        if (m === 'none') return text;
-        const hira = romajiToHiragana(text);
-        return m === 'katakana' ? toKatakanaFromHiragana(hira) : hira;
-      }
-      function convertPrefixLen(text, caret, m) {
-        const prefix = text.slice(0, caret);
-        return convertAll(prefix, m).length;
-      }
-      function update() {
-        const m = mode.value;
-        const before = input.value;
-        const start = input.selectionStart,
-          end = input.selectionEnd;
-
-        const converted = convertAll(before, m);
-        const newStart = convertPrefixLen(before, start, m);
-        const newEnd = convertPrefixLen(before, end, m);
-
-        if (before !== converted) input.value = converted;
-        try {
-          input.setSelectionRange(newStart, newEnd);
-        } catch {}
-
-        // ✅ Just call the glue API if it exists. No else branch.
-        if (window.IME && typeof window.IME.requestSuggest === 'function') {
-          window.IME.requestSuggest(input.value);
+        function convertAll(t) {
+          const m = mode();
+          return !window.Kana || m === 'none' ? t : Kana.convert(t, { mode: m });
         }
-      }
-
-      // 🚫 DELETE this — it causes recursion
-      // window.IME = window.IME || {};
-      // window.IME.requestSuggest = (text) => {
-      //   window.IME && window.IME.requestSuggest(input.value);
-      // };
-
-      // IME composition guards (keep)
-      input.addEventListener('compositionstart', () => {
-        composing = true;
-      });
-      input.addEventListener('compositionend', () => {
-        composing = false;
-        update();
-      });
-
-      input.addEventListener('input', () => {
-        if (!composing) update();
-      });
-      input.addEventListener('paste', () => {
-        setTimeout(() => {
-          if (!composing) update();
-        }, 0);
-      });
-      mode.addEventListener('change', update);
-
-      // =============================================================
-      // TEXT-TO-SPEECH (Firefox-friendly unlock + fallback)
-      // =============================================================
-      let voices = [];
-      let voicesReady = false;
-      const isFirefox = /firefox/i.test(navigator.userAgent);
-
-      function setTtsStatus(text, state) {
-        ttsStatus.textContent = 'Speech: ' + text;
-        if (state === 'ready') {
-          ttsInitBtn.textContent = 'Speech Ready ✓';
-          ttsInitBtn.classList.remove('primary');
-          ttsInitBtn.classList.add('success');
-          ttsInitBtn.setAttribute('aria-pressed', 'true');
-          ttsInitBtn.disabled = true;
-          speakBtn.disabled = false;
-        } else if (state === 'locked') {
-          ttsInitBtn.textContent = 'Enable Speech';
-          ttsInitBtn.classList.add('primary');
-          ttsInitBtn.classList.remove('success');
-          ttsInitBtn.setAttribute('aria-pressed', 'false');
-          ttsInitBtn.disabled = false;
-          speakBtn.disabled = true;
-        } else if (state === 'unsupported') {
-          ttsInitBtn.textContent = 'Speech Unsupported';
-          ttsInitBtn.disabled = true;
-          speakBtn.disabled = true;
-        } else if (state === 'error') {
-          ttsInitBtn.textContent = 'Speech Error';
-          ttsInitBtn.disabled = false;
-          speakBtn.disabled = true;
+        function prefLen(t, c) {
+          return convertAll(t.slice(0, c)).length;
         }
-      }
-
-      function populateVoices() {
-        voiceSel.innerHTML = '';
-        const list = voices.slice().sort((a, b) => {
-          const aj = /ja/i.test(a.lang),
-            bj = /ja/i.test(b.lang);
-          if (aj !== bj) return aj ? -1 : 1;
-          return (a.name || '').localeCompare(b.name || '');
+        function update() {
+          if (composing) return;
+          const before = input.value;
+          const s = input.selectionStart ?? before.length,
+            e = input.selectionEnd ?? s;
+          const conv = convertAll(before);
+          if (conv === before) return;
+          const ns = prefLen(before, s),
+            ne = prefLen(before, e);
+          input.value = conv;
+          try {
+            input.setSelectionRange(ns, ne);
+          } catch {}
+          if (window.IME && typeof IME.requestSuggest === 'function')
+            IME.requestSuggest(input.value);
+        }
+        input.addEventListener('compositionstart', () => (composing = true));
+        input.addEventListener('compositionend', () => {
+          composing = false;
+          update();
         });
-        list.forEach((v) => {
-          const opt = document.createElement('option');
-          opt.value = v.name;
-          opt.textContent = v.name + (v.lang ? ' (' + v.lang + ')' : '');
-          voiceSel.appendChild(opt);
-        });
-      }
-
-      function tryLoadVoices() {
-        const v = window.speechSynthesis.getVoices();
-        if (!v || v.length === 0) return false;
-        voices = v;
-        voicesReady = true;
-        populateVoices();
-        return true;
-      }
-
-      // Lightweight audio context nudge to satisfy autoplay policies
-      function unlockAudioGesture() {
-        try {
-          const Ctx = window.AudioContext || window.webkitAudioContext;
-          if (!Ctx) return;
-          const ctx = new Ctx();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          gain.gain.value = 0.001;
-          osc.frequency.value = 880;
-          osc.connect(gain).connect(ctx.destination);
-          osc.start();
-          setTimeout(() => {
-            osc.stop();
-            ctx.close();
-          }, 80);
-        } catch {}
-      }
-
-      // Empty utterance to unlock speech; helps Firefox
-      function unlockSynth(cb) {
-        try {
-          const u = new SpeechSynthesisUtterance('\u200b');
-          u.volume = 0.01;
-          u.rate = 1;
-          u.pitch = 1;
-          u.lang = 'ja-JP';
-          u.onend = () => cb && cb();
-          speechSynthesis.speak(u);
-        } catch {
-          cb && cb();
-        }
-      }
-
-      window.speechSynthesis.onvoiceschanged = () => {
-        if (tryLoadVoices()) setTtsStatus('Ready', 'ready');
-      };
-
-      ttsInitBtn.addEventListener('click', () => {
-        if (!('speechSynthesis' in window))
-          return setTtsStatus('Not available in this browser', 'unsupported');
-        unlockAudioGesture();
-        let tries = 0;
-        const maxTries = isFirefox ? 20 : 10; // poll longer on FF
-        const poll = setInterval(() => {
-          tries++;
-          if (tryLoadVoices()) {
-            clearInterval(poll);
-            setTtsStatus('Ready', 'ready');
-          }
-          if (tries >= maxTries) {
-            clearInterval(poll);
-            // Even without a list, FF can speak if lang is set
-            setTtsStatus(voicesReady ? 'Ready' : 'Ready (no list; using ja-JP)', 'ready');
-          }
-        }, 150);
-        unlockSynth(() =>
-          setTimeout(() => {
-            if (tryLoadVoices()) setTtsStatus('Ready', 'ready');
-          }, 120)
-        );
-      });
-
-      function getSelectedVoice() {
-        const sel = voiceSel.value;
-        const list = window.speechSynthesis.getVoices();
-        return (
-          list.find((v) => v.name === sel) ||
-          list.find((v) => /ja/i.test(v.lang)) ||
-          list[0] ||
-          null
-        );
-      }
-
-      function speak(text) {
-        if (!text) return;
-        if (!('speechSynthesis' in window)) return setTtsStatus('Not available', 'unsupported');
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        const v = getSelectedVoice();
-        if (v) {
-          u.voice = v;
-          u.lang = v.lang || 'ja-JP';
-        } else {
-          u.lang = 'ja-JP';
-        } // FF fallback when list empty
-        u.rate = 1;
-        u.pitch = 1;
-        u.volume = 1;
-        u.onerror = () => setTtsStatus('Playback error', 'error');
-        try {
-          if (!isFirefox) window.speechSynthesis.resume();
-        } catch {}
-        window.speechSynthesis.speak(u);
-      }
-
-      speakBtn.addEventListener('click', () => speak(input.value));
-
-      // Initial states
-      setTtsStatus('Locked (tap Enable)', 'locked');
-      update();
+        input.addEventListener('input', update);
+        input.addEventListener('paste', () => setTimeout(update, 0));
+        modeEl.addEventListener('change', update);
+        // initial gentle sync
+        setTimeout(update, 0);
+      })();
     </script>
   </body>
 </html>

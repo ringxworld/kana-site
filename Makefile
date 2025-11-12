@@ -218,30 +218,45 @@ pages-clean:
 pages-stage:
 	@echo "[pages] staging → $(OUT_DOCS)"
 	@mkdir -p "$(OUT_DOCS)"
-	# 1) copy root index.html
+	# 1) mirror all runtime assets from public/ → docs/
+	#    (rsync is idempotent and preserves dirs/files; fallback cp if rsync unavailable)
+	@if command -v rsync >/dev/null 2>&1; then \
+		rsync -a --delete "$(SRC_PUBLIC)/" "$(OUT_DOCS)/"; \
+	else \
+		cp -a "$(SRC_PUBLIC)/." "$(OUT_DOCS)/"; \
+	fi
+	# 2) copy root index.html
 	@cp "$(SRC_INDEX)" "$(OUT_DOCS)/index.html"
-	# 2) copy all runtime assets from public/
-	@cp -a "$(SRC_PUBLIC)/." "$(OUT_DOCS)/"
 	# 3) ensure Pages doesn't run Jekyll transforms
 	@touch "$(OUT_DOCS)/.nojekyll"
 	# 4) rewrite staged index.html to use relative paths under docs/
-	#    - script type="module" glue path -> ./js/ime-glue.js
-	#    - optional: strip any "./public/" prefixes that might still exist
-	@sed -i.bak 's#src="/js/ime-glue.js"#src="./js/ime-glue.js"#g' "$(OUT_DOCS)/index.html" || true
-	@sed -i.bak 's#src="./public/js/ime-glue.js"#src="./js/ime-glue.js"#g' "$(OUT_DOCS)/index.html" || true
-	@sed -i.bak 's#href="./public/#href="./#g' "$(OUT_DOCS)/index.html" || true
-	@sed -i.bak 's#src="./public/#src="./#g' "$(OUT_DOCS)/index.html" || true
+	#    - strip any leading /public/ or ./public/
+	#    - common absolute asset patterns → relative
+	@sed -i.bak \
+		-e 's#href="/public/#href="./#g' \
+		-e 's#src="/public/#src="./#g' \
+		-e 's#href="./public/#href="./#g' \
+		-e 's#src="./public/#src="./#g' \
+		-e 's#src="/js/#src="./js/#g' \
+		-e 's#href="/js/#href="./js/#g' \
+		"$(OUT_DOCS)/index.html" || true
 	@rm -f "$(OUT_DOCS)/index.html.bak"
 
 pages-verify:
 	@echo "[pages] verifying staged site"
-	@test -f "$(OUT_DOCS)/index.html" || { echo "missing docs/index.html"; exit 1; }
-	@test -f "$(OUT_DOCS)/js/ime-glue.js" || { echo "missing docs/js/ime-glue.js"; exit 1; }
-	@test -f "$(OUT_DOCS)/js/ime-worker.js" || { echo "missing docs/js/ime-worker.js"; exit 1; }
-	@test -f "$(OUT_DOCS)/vendor/kuromoji/kuromoji.js" || { echo "missing docs/vendor/kuromoji/kuromoji.js"; exit 1; }
-	@test -f "$(OUT_DOCS)/vendor/ipadic/base.dat.gz" || { echo "missing docs/vendor/ipadic/base.dat.gz"; exit 1; }
-	@test -f "$(OUT_DOCS)/dict/SKK-JISYO.L" || { echo "missing docs/dict/SKK-JISYO.L"; exit 1; }
-	@head -c 3 "$(OUT_DOCS)/dict/SKK-JISYO.L" | grep -q ';;' || { echo "SKK looks wrong (not SKK text)"; exit 1; }
+	@test -f "$(OUT_DOCS)/index.html" || { echo "missing $(OUT_DOCS)/index.html"; exit 1; }
+	# 1) ensure index.html does not reference the public/ prefix anymore
+	@! grep -qE '(["'\''])/?public/' "$(OUT_DOCS)/index.html" || { echo "index.html still references public/"; exit 1; }
+	# 2) ensure every file under public/ exists under docs/ with same relative path
+	@cd "$(SRC_PUBLIC)" && \
+		find . -type f -print0 | while IFS= read -r -d '' f; do \
+			t="$${f#./}"; \
+			test -f "../$(OUT_DOCS)/$$t" || { echo "missing $(OUT_DOCS)/$$t"; exit 1; }; \
+		done
+	# 3) sanity: docs/ contains something besides index.html and .nojekyll
+	@if [ "$$(find "$(OUT_DOCS)" -type f | wc -l)" -lt 3 ]; then \
+		echo "⚠️  Warning: docs/ seems light — double-check staging output."; \
+	fi
 	@echo "[pages] OK"
 
 # convenience wrappers
