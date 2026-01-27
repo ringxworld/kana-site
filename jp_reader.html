@@ -6,13 +6,13 @@
     <meta name="theme-color" content="#0f1115" />
     <title>Japanese Furigana Reader</title>
 
-    <!-- Google Fonts (Firefox compatible) -->
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-  href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@400;600&family=Shippori+Mincho:wght@400;600&family=Hina+Mincho&family=Yuji+Syuku&family=Yuji+Mai&family=Yusei+Magic&family=Kaisei+Decol:wght@400;600&family=Zen+Kurenaido&display=swap"
-  rel="stylesheet"
-/>
+      href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600&family=Noto+Sans+JP:wght@400;600&family=Shippori+Mincho:wght@400;600&family=Hina+Mincho&family=Yuji+Syuku&family=Yuji+Mai&family=Yusei+Magic&family=Kaisei+Decol:wght@400;600&family=Zen+Kurenaido&display=swap"
+      rel="stylesheet"
+    />
 
     <style>
       :root {
@@ -29,24 +29,24 @@
 
         /* Default reader font */
         --jp-font: "Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif;
+      }
 
+      /* Project site friendly paths (no leading slash) */
+      @font-face {
+        font-family: "Zin Hena Bokuryu RCF";
+        src: url("fonts/ZinHenaBokuryu-RCF.otf") format("opentype");
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
       }
 
       @font-face {
-  font-family: "Zin Hena Bokuryu RCF";
-  src: url("/fonts/ZinHenaBokuryu-RCF.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Zin Hena Bokuryu RDF";
-  src: url("/fonts/ZinHenaBokuryu-RDF.otf") format("opentype");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
+        font-family: "Zin Hena Bokuryu RDF";
+        src: url("fonts/ZinHenaBokuryu-RDF.otf") format("opentype");
+        font-weight: normal;
+        font-style: normal;
+        font-display: swap;
+      }
 
       * {
         box-sizing: border-box;
@@ -140,20 +140,21 @@
         padding: 8px 10px;
         cursor: pointer;
       }
-      select:focus {
-  outline: 2px solid rgba(122, 162, 247, 0.45);
-  outline-offset: 2px;
-}
-/* This is the key part: dropdown list items */
-select option {
-  background: var(--panel);
-  color: var(--fg);
-}
 
       button:hover,
       select:hover,
       input[type="file"]::file-selector-button:hover {
         border-color: rgba(122, 162, 247, 0.6);
+      }
+
+      select:focus {
+        outline: 2px solid rgba(122, 162, 247, 0.45);
+        outline-offset: 2px;
+      }
+
+      select option {
+        background: var(--panel);
+        color: var(--fg);
       }
 
       label {
@@ -174,7 +175,7 @@ select option {
 
       textarea {
         width: 100%;
-        min-height: 180px;
+        min-height: 220px;
         resize: vertical;
         background: rgba(255, 255, 255, 0.02);
         color: var(--fg);
@@ -199,9 +200,62 @@ select option {
         line-height: var(--lh);
         letter-spacing: 0.01em;
         word-break: break-word;
-        white-space: pre-wrap;
         font-family: var(--jp-font);
-        padding-top: 0.35em; /* headroom so furigana never clips at top */
+        padding-top: 0.35em;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .sentence {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 12px;
+
+  /* Headroom for absolute-position furigana */
+  padding: 22px 14px 12px 14px;
+
+  /* Ensure nothing gets clipped weirdly */
+  overflow: visible;
+}
+
+
+
+      .jp-row {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+      }
+
+      .jp { padding-top: 0.15em; }
+
+
+      .en {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans",
+          sans-serif;
+        font-size: 0.9em;
+        line-height: 1.55;
+      }
+
+      .en.hidden {
+        display: none;
+      }
+
+      .enbtn {
+        flex: 0 0 auto;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        user-select: none;
+      }
+
+      .enbtn[aria-pressed="true"] {
+        border-color: rgba(122, 162, 247, 0.7);
       }
 
       /* Furigana renderer for explicit format: (BASE (READING)) */
@@ -228,6 +282,9 @@ select option {
         color: var(--muted);
         user-select: none;
         white-space: nowrap;
+         margin-bottom: 0.12em;
+  /* Optional: cap how far it can sit above */
+  max-width: 12em;
       }
 
       .hide-furi .rt {
@@ -256,10 +313,9 @@ select option {
         </div>
 
         <div class="sub">
-          Input format examples:
-          <span class="pill">(作品 (さくひん))</span>
-          <span class="pill">お(母 (かあ))さん</span>
-          This page renders furigana only for explicitly grouped pairs.
+          Input format (paired lines): JP then EN. Example:
+          <span class="pill">よくできた(作品 (さくひん))だ。</span>
+          <span class="pill">It’s a well-made piece of work.</span>
         </div>
       </div>
     </header>
@@ -270,35 +326,36 @@ select option {
           <input id="file" type="file" accept=".txt,.md,.text" />
           <button id="renderBtn">Render</button>
           <button id="clearBtn">Clear</button>
-          <span class="pill">Paste text or load a file. Output removes the outer parentheses.</span>
+          <span class="pill">JP line then EN line. Blank lines allowed.</span>
         </div>
 
         <div class="row">
           <label><input id="toggleFuri" type="checkbox" checked /> Show furigana</label>
 
+          <label><input id="showAllEn" type="checkbox" /> Show all English</label>
+
           <label>
             Font
             <select id="fontSelect" aria-label="Font selection">
+              <option value="yuji_mai" selected>Yuji Mai (default)</option>
               <option value="serif">Noto Serif JP (normal)</option>
-              <option value="sans" selected >Noto Sans JP (clean)</option>
+              <option value="sans" selected>Noto Sans JP (clean)</option>
               <option value="shippori">Shippori Mincho (literary)</option>
               <option value="hina">Hina Mincho (handwritten-ish)</option>
               <option value="yuji">Yuji Syuku (brush-ish)</option>
+              <option value="yusei">Yusei Magic (marker handwritten)</option>
+              <option value="kaisei_decol">Kaisei Decol (decorative)</option>
+              <option value="zen_kurenaido">Zen Kurenaido (handwritten quirky)</option>
+              <option value="zin_bokuryu">Zin Hena Bokuryu (free brush)</option>
+              <option value="zin_bokuryu_hard">Zin Hena Bokuryu RDF (very hard)</option>
               <option value="system_mincho">System Mincho</option>
               <option value="system_gothic">System Gothic</option>
-              <option value="yuji_mai">Yuji Mai</option>
-<option value="yusei">Yusei Magic (marker handwritten)</option>
-<option value="kaisei_decol">Kaisei Decol (decorative)</option>
-<option value="zen_kurenaido">Zen Kurenaido (handwritten quirky)</option>
-<option value="zin_bokuryu">Zin Hena Bokuryu (free brush)</option>
-<option value="zin_bokuryu_hard">Zin Hena Bokuryu RDF (very hard)</option>
-
             </select>
           </label>
 
           <label>
             Font size
-            <input id="fontSize" type="range" min="16" max="32" value="20" />
+            <input id="fontSize" type="range" min="16" max="52" value="20" />
             <span id="fontSizeVal" class="pill">20px</span>
           </label>
 
@@ -317,7 +374,12 @@ select option {
 
       <textarea
         id="input"
-        placeholder="Paste Japanese text here. Use explicit format: (漢字 (かな))"
+        placeholder="Paste paired lines here:
+JP sentence
+English translation
+
+JP sentence
+English translation"
       ></textarea>
 
       <div class="reader">

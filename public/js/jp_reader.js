@@ -1,46 +1,72 @@
-/* Japanese Furigana Reader
-   Renders explicit format: (BASE (READING))
-   Example: (作品 (さくひん)) and お(母 (かあ))さん
+/* jp_reader.js
+   Paired-line Japanese reader with furigana and per-sentence English reveal.
+
+   Input formats supported:
+   1) JP line then EN line (blank lines allowed between entries)
+   2) JP line only (no EN). EN button is hidden for that sentence.
+   Heuristic: if the next non-empty line contains Japanese characters, it is treated as the next JP (not EN).
 */
 
-(function () {
+(() => {
   const FONT_KEY = "jp_reader_font";
+  const FS_KEY = "jp_reader_fs";
+  const LH_KEY = "jp_reader_lh";
+  const FURI_KEY = "jp_reader_furi";
   const KEEP_PARENS_KEY = "jp_reader_keep_parens";
-  const SHOW_FURI_KEY = "jp_reader_show_furi";
-  const FONT_SIZE_KEY = "jp_reader_font_size";
-  const LINE_HEIGHT_KEY = "jp_reader_line_height";
+  const SHOW_ALL_EN_KEY = "jp_reader_show_all_en";
+
+  const elFile = document.getElementById("file");
+  const elRender = document.getElementById("renderBtn");
+  const elClear = document.getElementById("clearBtn");
+  const elInput = document.getElementById("input");
+  const elOut = document.getElementById("output");
+
+  const elToggleFuri = document.getElementById("toggleFuri");
+  const elShowAllEn = document.getElementById("showAllEn");
+  const elKeepParens = document.getElementById("keepParens");
+
+  const elFontSelect = document.getElementById("fontSelect");
+  const elFontSize = document.getElementById("fontSize");
+  const elFontSizeVal = document.getElementById("fontSizeVal");
+  const elLineHeight = document.getElementById("lineHeight");
+  const elLineHeightVal = document.getElementById("lineHeightVal");
+
+  if (
+    !elFile ||
+    !elRender ||
+    !elClear ||
+    !elInput ||
+    !elOut ||
+    !elToggleFuri ||
+    !elShowAllEn ||
+    !elKeepParens ||
+    !elFontSelect ||
+    !elFontSize ||
+    !elFontSizeVal ||
+    !elLineHeight ||
+    !elLineHeightVal
+  ) {
+    return;
+  }
 
   const fontMap = {
-    serif:
-      '"Noto Serif JP","Shippori Mincho","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
-    sans:
-      '"Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
-    shippori:
-      '"Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
-    hina:
-      '"Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
-    yuji:
-      '"Yuji Syuku","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
+    yuji_mai:
+      '"Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    serif: '"Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    sans: '"Noto Sans JP","Noto Sans","Yu Gothic","Meiryo",sans-serif',
+    shippori: '"Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    hina: '"Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    yuji: '"Yuji Syuku","Yuji Mai","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    yusei: '"Yusei Magic","Noto Sans JP","Yu Gothic","Meiryo",sans-serif',
+    kaisei_decol: '"Kaisei Decol","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    zen_kurenaido: '"Zen Kurenaido","Noto Sans JP","Yu Gothic","Meiryo",sans-serif',
+    zin_bokuryu:
+      '"Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+    zin_bokuryu_hard:
+      '"Zin Hena Bokuryu RDF","Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
     system_mincho: '"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
     system_gothic: '"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
-    yuji_mai:
-  '"Yuji Mai","Yuji Syuku","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
-yusei:
-  '"Yusei Magic","Zen Kurenaido","Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
-kaisei_decol:
-  '"Kaisei Decol","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
-zen_kurenaido:
-  '"Zen Kurenaido","Yusei Magic","Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
-zin_bokuryu:
-  '"Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Noto Serif JP","Yu Mincho",serif',
-
-zin_bokuryu_hard:
-  '"Zin Hena Bokuryu RDF","Zin Hena Bokuryu RCF","Yuji Mai","Noto Serif JP","Yu Mincho",serif',
   };
-
-  function $(id) {
-    return document.getElementById(id);
-  }
 
   function escapeHtml(s) {
     return s
@@ -51,156 +77,312 @@ zin_bokuryu_hard:
       .replaceAll("'", "&#039;");
   }
 
-  // Convert "(BASE (READING))" into a furigana span.
-  // If keepOuterParens is true, output "(<span class=furi>..</span>)", otherwise output just the span.
-  function toFuriSpans(htmlEscapedText, keepOuterParens) {
-    // Match: ( BASE ( READING ) )
-    // BASE/READING are "no parentheses" runs. Spaces around tokens are allowed.
-    const re = /\(\s*([^()]+?)\s*\(\s*([^()]+?)\s*\)\s*\)/g;
-
-    return htmlEscapedText.replace(re, (m, base, reading) => {
-      const span =
-        '<span class="furi">' +
-        `<span class="rt">${reading}</span>` +
-        `<span class="base">${base}</span>` +
-        "</span>";
-      return keepOuterParens ? `(${span})` : span;
-    });
+  // Detect if a line is likely Japanese (hiragana, katakana, kanji).
+  function hasJapaneseChars(line) {
+    return /[\u3040-\u30ff\u3400-\u9fff]/.test(line);
   }
 
-  function render() {
-    const inputEl = $("input");
-    const outEl = $("output");
-    const keepParensEl = $("keepParens");
+  // English heuristic: no Japanese chars and has some Latin letters.
+  function looksEnglish(line) {
+    const s = line.trim();
+    if (!s) return false;
+    if (hasJapaneseChars(s)) return false;
 
-    if (!inputEl || !outEl || !keepParensEl) return;
+    const latin = (s.match(/[A-Za-z]/g) || []).length;
+    if (latin >= 2) return true;
 
-    const keepParens = keepParensEl.checked;
-    const escaped = escapeHtml(inputEl.value);
-    outEl.innerHTML = toFuriSpans(escaped, keepParens);
+    // If it is mostly punctuation/numbers, do not treat as EN.
+    return false;
   }
 
-  function setCssVar(name, value) {
-    document.documentElement.style.setProperty(name, value);
+  // Parse input into pairs. If next non-empty line is not English, EN is missing.
+  function parsePairs(input) {
+    const lines = input.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
+    const pairs = [];
+    let i = 0;
+
+    function nextNonEmpty(idx) {
+      while (idx < lines.length && lines[idx].trim() === "") idx += 1;
+      return idx;
+    }
+
+    while (i < lines.length) {
+      i = nextNonEmpty(i);
+      if (i >= lines.length) break;
+
+      const jp = lines[i];
+      i += 1;
+
+      const j = nextNonEmpty(i);
+      if (j >= lines.length) {
+        pairs.push({ jp, en: "" });
+        break;
+      }
+
+      const candidate = lines[j];
+
+      if (looksEnglish(candidate)) {
+        pairs.push({ jp, en: candidate });
+        i = j + 1;
+      } else {
+        pairs.push({ jp, en: "" });
+        i = j; // treat candidate as next JP
+      }
+    }
+
+    return pairs;
+  }
+
+  // Parse explicit furigana groups: (BASE (READING))
+  // Example: お(母 (かあ))さん and (作品 (さくひん))
+  function parseFuriganaGroups(raw, keepParens) {
+    const out = [];
+    let i = 0;
+
+    while (i < raw.length) {
+      const ch = raw[i];
+      if (ch !== "(") {
+        out.push({ t: "text", v: raw[i] });
+        i += 1;
+        continue;
+      }
+
+      const start = i;
+      i += 1;
+
+      let base = "";
+      let foundReadingStart = false;
+
+      while (i < raw.length) {
+        if (raw[i] === "(") {
+          foundReadingStart = true;
+          break;
+        }
+        base += raw[i];
+        i += 1;
+      }
+
+      if (!foundReadingStart) {
+        out.push({ t: "text", v: raw.slice(start, i) });
+        continue;
+      }
+
+      i += 1; // consume "(" of reading
+
+      let reading = "";
+      let readingClosed = false;
+
+      while (i < raw.length) {
+        if (raw[i] === ")") {
+          readingClosed = true;
+          i += 1;
+          break;
+        }
+        reading += raw[i];
+        i += 1;
+      }
+
+      if (!readingClosed) {
+        out.push({ t: "text", v: raw.slice(start, i) });
+        continue;
+      }
+
+      // Expect closing ")" for outer group
+      if (i >= raw.length || raw[i] !== ")") {
+        out.push({ t: "text", v: raw.slice(start, i) });
+        continue;
+      }
+      i += 1; // consume outer ")"
+
+      const baseTrim = base.trim();
+      const readingTrim = reading.trim();
+
+      if (keepParens) out.push({ t: "text", v: "(" });
+      out.push({ t: "furi", base: baseTrim, reading: readingTrim });
+      if (keepParens) out.push({ t: "text", v: ")" });
+    }
+
+    return out;
+  }
+
+  function tokensToHtml(tokens) {
+    let html = "";
+    for (const tok of tokens) {
+      if (tok.t === "text") {
+        html += escapeHtml(tok.v);
+      } else if (tok.t === "furi") {
+        html +=
+          '<span class="furi">' +
+          `<span class="base">${escapeHtml(tok.base)}</span>` +
+          `<span class="rt">${escapeHtml(tok.reading)}</span>` +
+          "</span>";
+      }
+    }
+    return html;
   }
 
   function applyFont(key) {
-    const stack = fontMap[key] || fontMap.serif;
-    setCssVar("--jp-font", stack);
+    const family = fontMap[key] || fontMap.yuji_mai;
+    document.documentElement.style.setProperty("--jp-font", family);
   }
 
-  function applyShowFurigana(show) {
-    const outEl = $("output");
-    if (!outEl) return;
-    outEl.classList.toggle("hide-furi", !show);
+  function applyFuriganaVisibility() {
+    elOut.classList.toggle("hide-furi", !elToggleFuri.checked);
   }
 
-  function init() {
-    const fileEl = $("file");
-    const renderBtn = $("renderBtn");
-    const clearBtn = $("clearBtn");
-    const toggleFuri = $("toggleFuri");
-    const fontSelect = $("fontSelect");
-    const fontSize = $("fontSize");
-    const fontSizeVal = $("fontSizeVal");
-    const lineHeight = $("lineHeight");
-    const lineHeightVal = $("lineHeightVal");
-    const keepParens = $("keepParens");
+  function setFontSize(px) {
+    document.documentElement.style.setProperty("--fs", px + "px");
+    elFontSizeVal.textContent = px + "px";
+  }
 
-    if (
-      !fileEl ||
-      !renderBtn ||
-      !clearBtn ||
-      !toggleFuri ||
-      !fontSelect ||
-      !fontSize ||
-      !fontSizeVal ||
-      !lineHeight ||
-      !lineHeightVal ||
-      !keepParens
-    ) {
-      return;
-    }
+  function setLineHeight(v) {
+    document.documentElement.style.setProperty("--lh", String(v));
+    elLineHeightVal.textContent = String(v);
+  }
 
-    // Restore settings
+  function saveState() {
+    localStorage.setItem(FONT_KEY, elFontSelect.value);
+    localStorage.setItem(FS_KEY, String(elFontSize.value));
+    localStorage.setItem(LH_KEY, String(elLineHeight.value));
+    localStorage.setItem(FURI_KEY, elToggleFuri.checked ? "1" : "0");
+    localStorage.setItem(KEEP_PARENS_KEY, elKeepParens.checked ? "1" : "0");
+    localStorage.setItem(SHOW_ALL_EN_KEY, elShowAllEn.checked ? "1" : "0");
+  }
+
+  function loadState() {
     const savedFont = localStorage.getItem(FONT_KEY);
+    if (savedFont && fontMap[savedFont]) elFontSelect.value = savedFont;
 
-if (savedFont && fontMap[savedFont]) {
-  fontSelect.value = savedFont;
-}
+    const fs = localStorage.getItem(FS_KEY);
+    if (fs && !Number.isNaN(Number(fs))) elFontSize.value = fs;
 
-applyFont(fontSelect.value);
+    const lh = localStorage.getItem(LH_KEY);
+    if (lh && !Number.isNaN(Number(lh))) elLineHeight.value = lh;
 
-    const savedKeepParens = localStorage.getItem(KEEP_PARENS_KEY);
-    if (savedKeepParens === "1") keepParens.checked = true;
+    const furi = localStorage.getItem(FURI_KEY);
+    if (furi !== null) elToggleFuri.checked = furi === "1";
 
-    const savedShowFuri = localStorage.getItem(SHOW_FURI_KEY);
-    if (savedShowFuri === "0") toggleFuri.checked = false;
-    applyShowFurigana(toggleFuri.checked);
+    const kp = localStorage.getItem(KEEP_PARENS_KEY);
+    if (kp !== null) elKeepParens.checked = kp === "1";
 
-    const savedFs = localStorage.getItem(FONT_SIZE_KEY);
-    if (savedFs) {
-      const v = Number(savedFs);
-      if (!Number.isNaN(v)) fontSize.value = String(v);
-    }
-    setCssVar("--fs", fontSize.value + "px");
-    fontSizeVal.textContent = fontSize.value + "px";
+    const sae = localStorage.getItem(SHOW_ALL_EN_KEY);
+    if (sae !== null) elShowAllEn.checked = sae === "1";
 
-    const savedLh = localStorage.getItem(LINE_HEIGHT_KEY);
-    if (savedLh) {
-      const v = Number(savedLh);
-      if (!Number.isNaN(v)) lineHeight.value = String(v);
-    }
-    setCssVar("--lh", lineHeight.value);
-    lineHeightVal.textContent = lineHeight.value;
-
-    // Wire events
-    renderBtn.addEventListener("click", render);
-
-    clearBtn.addEventListener("click", () => {
-      $("input").value = "";
-      $("output").innerHTML = "";
-    });
-
-    toggleFuri.addEventListener("change", () => {
-      applyShowFurigana(toggleFuri.checked);
-      localStorage.setItem(SHOW_FURI_KEY, toggleFuri.checked ? "1" : "0");
-    });
-
-    fontSelect.addEventListener("change", () => {
-      applyFont(fontSelect.value);
-      localStorage.setItem(FONT_KEY, fontSelect.value);
-    });
-
-    fontSize.addEventListener("input", () => {
-      setCssVar("--fs", fontSize.value + "px");
-      fontSizeVal.textContent = fontSize.value + "px";
-      localStorage.setItem(FONT_SIZE_KEY, fontSize.value);
-    });
-
-    lineHeight.addEventListener("input", () => {
-      setCssVar("--lh", lineHeight.value);
-      lineHeightVal.textContent = lineHeight.value;
-      localStorage.setItem(LINE_HEIGHT_KEY, lineHeight.value);
-    });
-
-    keepParens.addEventListener("change", () => {
-      localStorage.setItem(KEEP_PARENS_KEY, keepParens.checked ? "1" : "0");
-      render();
-    });
-
-    fileEl.addEventListener("change", async (e) => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const text = await file.text();
-      $("input").value = text;
-      render();
-    });
+    applyFont(elFontSelect.value);
+    setFontSize(Number(elFontSize.value));
+    setLineHeight(elLineHeight.value);
+    applyFuriganaVisibility();
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init);
-  } else {
-    init();
+  function render() {
+    const keepParens = !!elKeepParens.checked;
+    const showAllEn = !!elShowAllEn.checked;
+
+    const pairs = parsePairs(elInput.value);
+
+    elOut.innerHTML = "";
+    applyFuriganaVisibility();
+
+    for (let idx = 0; idx < pairs.length; idx++) {
+      const { jp, en } = pairs[idx];
+
+      const sentence = document.createElement("div");
+      sentence.className = "sentence";
+
+      const jpRow = document.createElement("div");
+      jpRow.className = "jp-row";
+
+      const jpDiv = document.createElement("div");
+      jpDiv.className = "jp";
+      // Small extra headroom so furigana does not kiss the card border.
+      jpDiv.style.paddingTop = "0.15em";
+
+      const tokens = parseFuriganaGroups(jp, keepParens);
+      jpDiv.innerHTML = tokensToHtml(tokens);
+
+      const btn = document.createElement("button");
+      btn.className = "enbtn";
+      btn.type = "button";
+      btn.textContent = "EN";
+      btn.setAttribute("aria-pressed", showAllEn ? "true" : "false");
+
+      const enDiv = document.createElement("div");
+      enDiv.className = "en" + (showAllEn ? "" : " hidden");
+      enDiv.textContent = en || "";
+
+      const hasEn = !!en && en.trim() !== "";
+      if (!hasEn) {
+        btn.style.display = "none";
+        enDiv.classList.add("hidden");
+      }
+
+      btn.addEventListener("click", () => {
+        const isHidden = enDiv.classList.contains("hidden");
+        enDiv.classList.toggle("hidden", !isHidden);
+        btn.setAttribute("aria-pressed", isHidden ? "true" : "false");
+      });
+
+      jpRow.appendChild(jpDiv);
+      jpRow.appendChild(btn);
+
+      sentence.appendChild(jpRow);
+      sentence.appendChild(enDiv);
+
+      elOut.appendChild(sentence);
+    }
   }
+
+  // Events
+  elRender.addEventListener("click", () => {
+    render();
+    saveState();
+  });
+
+  elClear.addEventListener("click", () => {
+    elInput.value = "";
+    elOut.innerHTML = "";
+    saveState();
+  });
+
+  elToggleFuri.addEventListener("change", () => {
+    applyFuriganaVisibility();
+    saveState();
+  });
+
+  elShowAllEn.addEventListener("change", () => {
+    render();
+    saveState();
+  });
+
+  elKeepParens.addEventListener("change", () => {
+    render();
+    saveState();
+  });
+
+  elFontSelect.addEventListener("change", () => {
+    applyFont(elFontSelect.value);
+    saveState();
+  });
+
+  elFontSize.addEventListener("input", () => {
+    setFontSize(Number(elFontSize.value));
+  });
+  elFontSize.addEventListener("change", saveState);
+
+  elLineHeight.addEventListener("input", () => {
+    setLineHeight(elLineHeight.value);
+  });
+  elLineHeight.addEventListener("change", saveState);
+
+  elFile.addEventListener("change", async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const text = await file.text();
+    elInput.value = text;
+    render();
+    saveState();
+  });
+
+  // Init
+  loadState();
 })();
