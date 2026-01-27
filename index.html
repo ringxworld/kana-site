@@ -88,13 +88,22 @@
       select {
         appearance: none;
         border: 1px solid #293241;
-        background: #0f1725;
-        color: var(--text);
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--fg);
         padding: 10px 14px;
         border-radius: 12px;
         font-weight: 600;
         min-height: var(--tap);
       }
+      select:focus {
+  outline: 2px solid rgba(122, 162, 247, 0.45);
+  outline-offset: 2px;
+}
+/* This is the key part: dropdown list items */
+select option {
+  background: var(--panel);
+  color: var(--fg);
+}
       button.primary {
         background: linear-gradient(180deg, #486bff, #3a57d6);
         border: none;

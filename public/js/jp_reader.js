@@ -23,6 +23,19 @@
       '"Yuji Syuku","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
     system_mincho: '"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
     system_gothic: '"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
+    yuji_mai:
+  '"Yuji Mai","Yuji Syuku","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
+yusei:
+  '"Yusei Magic","Zen Kurenaido","Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
+kaisei_decol:
+  '"Kaisei Decol","Shippori Mincho","Noto Serif JP","Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
+zen_kurenaido:
+  '"Zen Kurenaido","Yusei Magic","Noto Sans JP","Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
+zin_bokuryu:
+  '"Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Noto Serif JP","Yu Mincho",serif',
+
+zin_bokuryu_hard:
+  '"Zin Hena Bokuryu RDF","Zin Hena Bokuryu RCF","Yuji Mai","Noto Serif JP","Yu Mincho",serif',
   };
 
   function $(id) {
@@ -111,8 +124,12 @@
 
     // Restore settings
     const savedFont = localStorage.getItem(FONT_KEY);
-    if (savedFont && fontMap[savedFont]) fontSelect.value = savedFont;
-    applyFont(fontSelect.value);
+
+if (savedFont && fontMap[savedFont]) {
+  fontSelect.value = savedFont;
+}
+
+applyFont(fontSelect.value);
 
     const savedKeepParens = localStorage.getItem(KEEP_PARENS_KEY);
     if (savedKeepParens === "1") keepParens.checked = true;
