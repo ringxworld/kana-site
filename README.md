@@ -5,7 +5,9 @@
 A simple, self-contained web app for practicing Japanese typing and conversions.
 It takes romaji input and converts it to hiragana, katakana, or kanji suggestions — just like an IME, but in your browser.
 
-[**→ Live Site**](https://ringxworld.github.io/kana-site/)
+Live links:
+- **App**: https://ringxworld.github.io/kana-site/
+- **Reader**: https://ringxworld.github.io/kana-site/#/reader
 
 ---
 
