@@ -1,13 +1,4 @@
 ﻿body.page-reader {
-  --bg: #0f1115;
-  --fg: #e7eaf0;
-  --muted: #aab2c0;
-  --panel: #161a22;
-  --border: #262c3a;
-  --accent: #7aa2f7;
-  --maxw: 900px;
-  --fs: 20px;
-  --lh: 1.9;
   --jp-font:
     "Yuji Mai",
     "Hina Mincho",
@@ -16,10 +7,12 @@
     "Yu Mincho",
     "MS Mincho",
     serif;
+  --fs: 20px;
+  --lh: 1.9;
 }
 
 .page-reader {
-  color: var(--fg);
+  color: var(--text);
   font-family:
     ui-sans-serif,
     system-ui,
@@ -32,60 +25,22 @@
     sans-serif;
 }
 
-.page-reader .reader-header {
-  padding: 18px 18px 10px 18px;
-  border-bottom: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
-}
-
-.page-reader .reader-wrap {
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 0 18px 28px 18px;
-}
-
-.page-reader .topline {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.page-reader h1 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--fg);
-}
-
-.page-reader .top-nav {
-  margin-left: auto;
-}
-
-.page-reader .nav-link {
-  color: var(--accent);
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.page-reader .nav-link:hover {
-  border-color: rgba(122, 162, 247, 0.6);
-}
-
 .page-reader .sub {
   margin-top: 6px;
   font-size: 13px;
-  color: var(--muted);
+  color: var(--sub);
+}
+
+.page-reader .sub .pill {
+  margin-left: 6px;
+  display: inline-block;
 }
 
 .page-reader .controls {
   display: grid;
   grid-template-columns: 1fr;
   gap: 12px;
-  margin: 14px 0 16px 0;
-  padding: 14px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 12px;
+  margin: 24px 0 16px 0;
 }
 
 .page-reader .row {
@@ -99,17 +54,11 @@
 .page-reader input[type='file']::file-selector-button,
 .page-reader select {
   background: rgba(255, 255, 255, 0.02);
-  color: var(--fg);
-  border: 1px solid var(--border);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 8px 10px;
   cursor: pointer;
-}
-
-.page-reader button:hover,
-.page-reader select:hover,
-.page-reader input[type='file']::file-selector-button:hover {
-  border-color: rgba(122, 162, 247, 0.6);
 }
 
 .page-reader select:focus {
@@ -119,16 +68,16 @@
 
 .page-reader select option {
   background: var(--panel);
-  color: var(--fg);
+  color: var(--text);
 }
 
 .page-reader label {
   font-size: 13px;
-  color: var(--muted);
+  color: var(--sub);
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 10px;
   padding: 7px 10px;
   background: rgba(255, 255, 255, 0.02);
@@ -143,8 +92,8 @@
   min-height: 220px;
   resize: vertical;
   background: rgba(255, 255, 255, 0.02);
-  color: var(--fg);
-  border: 1px solid var(--border);
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px;
   line-height: 1.5;
@@ -162,7 +111,7 @@
   margin-top: 14px;
   padding: 22px 18px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
 }
 
@@ -200,7 +149,7 @@
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  color: var(--muted);
+  color: var(--sub);
   font-family:
     ui-sans-serif,
     system-ui,
@@ -252,7 +201,7 @@
   margin-bottom: 0.12em;
   font-size: 0.55em;
   line-height: 1;
-  color: var(--muted);
+  color: var(--sub);
   user-select: none;
   white-space: nowrap;
   max-width: 12em;
@@ -264,8 +213,8 @@
 
 .page-reader .pill {
   font-size: 12px;
-  color: var(--muted);
+  color: var(--sub);
   padding: 6px 10px;
-  border: 1px dashed var(--border);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 999px;
 }

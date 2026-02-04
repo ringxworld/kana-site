@@ -283,22 +283,23 @@ export default function Reader() {
 
   return (
     <div className="page page-reader">
-      <header className="reader-header">
-        <div className="reader-wrap">
-          <div className="topline">
+      <header className="app-header">
+        <div className="app-shell header-row">
+          <div className="brand">
+            <p className="eyebrow">Furigana Reader</p>
             <h1>Japanese Furigana Reader</h1>
-            <Nav />
+            <p className="sub">
+              Input format (paired lines): JP then EN.
+              <span className="pill">よくできた(作品 (さくひん))だ。</span>
+              <span className="pill">It’s a well-made piece of work.</span>
+            </p>
           </div>
-          <div className="sub">
-            Input format (paired lines): JP then EN. Example:
-            <span className="pill">よくできた(作品 (さくひん))だ。</span>
-            <span className="pill">It’s a well-made piece of work.</span>
-          </div>
+          <Nav />
         </div>
       </header>
 
-      <div className="reader-wrap">
-        <div className="controls">
+      <main className="app-shell">
+        <div className="controls card">
           <div className="row">
             <input type="file" accept=".txt,.md,.text" onChange={handleFile} />
             <button type="button" onClick={handleRender}>
@@ -414,7 +415,7 @@ English translation"
             })}
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

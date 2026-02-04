@@ -9,12 +9,12 @@ export default function Nav() {
         className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
         to="/"
       >
-        Home
+        Tools
       </NavLink>
-      <NavLink
-        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-        to="/reader"
-      >
+      <NavLink className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/romaji">
+        Romaji
+      </NavLink>
+      <NavLink className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/reader">
         Reader
       </NavLink>
     </nav>
