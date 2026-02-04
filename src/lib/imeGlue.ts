@@ -1,15 +1,27 @@
-﻿export function initIme({ textarea, baseUrl }) {
+﻿export type ImeHandle = {
+  isReady: boolean;
+  requestSuggest: (text?: string) => void;
+  cleanup?: () => void;
+};
+
+export function initIme({
+  textarea,
+  baseUrl,
+}: {
+  textarea: HTMLTextAreaElement;
+  baseUrl: string;
+}): ImeHandle | null {
   if (!textarea) return null;
 
-  let imeWorker = null;
-  const ime = {
+  let imeWorker: Worker | null = null;
+  const ime: ImeHandle = {
     isReady: false,
     requestSuggest: () => {},
   };
 
-  const queue = [];
+  const queue: Array<{ type: 'suggest'; text: string }> = [];
   ime.requestSuggest = (text) => {
-    const payload = { type: 'suggest', text: text ?? textarea.value ?? '' };
+    const payload = { type: 'suggest' as const, text: text ?? textarea.value ?? '' };
     if (!ime.isReady) {
       queue.push(payload);
       return;
@@ -35,11 +47,11 @@
     overflowY: 'auto',
     fontFamily:
       "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Noto Sans JP','Hiragino Kaku Gothic ProN',Meiryo,sans-serif",
-  });
+  } as CSSStyleDeclaration);
   document.body.appendChild(popup);
 
   let currentReading = '';
-  let currentList = [];
+  let currentList: string[] = [];
   let currentIndex = -1;
 
   function hidePopup() {
@@ -57,7 +69,7 @@
   }
 
   function updateHighlight() {
-    const kids = Array.from(popup.children);
+    const kids = Array.from(popup.children) as HTMLElement[];
     kids.forEach(
       (el, idx) => (el.style.background = idx === currentIndex ? '#152238' : 'transparent')
     );
@@ -65,7 +77,7 @@
     if (active) active.scrollIntoView({ block: 'nearest' });
   }
 
-  function commitPick(kanji) {
+  function commitPick(kanji: string) {
     const v = textarea.value;
     const match = v.match(/([ぁ-ゖー]+)$/);
     if (match) {
@@ -74,7 +86,7 @@
     } else {
       textarea.value = v + kanji;
     }
-    if (ime.isReady && currentReading) {
+    if (ime.isReady && currentReading && imeWorker) {
       imeWorker.postMessage({ type: 'commit', reading: currentReading, kanji });
     }
     hidePopup();
@@ -82,7 +94,7 @@
     textarea.focus();
   }
 
-  function renderPopup(reading, candidates) {
+  function renderPopup(reading: string, candidates: string[]) {
     currentReading = reading || '';
     currentList = candidates || [];
     currentIndex = currentList.length ? 0 : -1;
@@ -99,7 +111,7 @@
         cursor: 'pointer',
         borderBottom: '1px solid rgba(255,255,255,0.06)',
         fontSize: '18px',
-      });
+      } as CSSStyleDeclaration);
       if (i === currentIndex) div.style.background = '#152238';
       div.addEventListener('mouseenter', () => {
         currentIndex = i;
@@ -115,7 +127,7 @@
     popup.style.display = 'block';
   }
 
-  function onKeydown(e) {
+  function onKeydown(e: KeyboardEvent) {
     const open = popup.style.display === 'block';
     if (!open) return;
     if (e.key === 'ArrowDown') {
@@ -139,8 +151,8 @@
     }
   }
 
-  function onMouseDown(ev) {
-    if (popup.style.display === 'block' && !popup.contains(ev.target) && ev.target !== textarea) {
+  function onMouseDown(ev: MouseEvent) {
+    if (popup.style.display === 'block' && !popup.contains(ev.target as Node) && ev.target !== textarea) {
       hidePopup();
     }
   }
@@ -170,11 +182,11 @@
   const KUROMOJI_URL = new URL(`${baseUrl}vendor/kuromoji/kuromoji.js`, window.location.href).href;
   const IPADIC_URL = new URL(`${baseUrl}vendor/ipadic/`, window.location.href).pathname;
 
-  imeWorker.onmessage = (e) => {
+  imeWorker.onmessage = (e: MessageEvent) => {
     const msg = e.data || {};
     if (msg.type === 'ready') {
       ime.isReady = true;
-      for (const p of queue.splice(0)) imeWorker.postMessage(p);
+      for (const p of queue.splice(0)) imeWorker?.postMessage(p);
       return;
     }
     if (msg.type === 'suggest') {

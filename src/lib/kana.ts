@@ -2,13 +2,13 @@
 
 const KATA_SHIFT = 0x60;
 
-function toKatakanaStr(s) {
+function toKatakanaStr(s: string) {
   return s.replace(/[\u3041-\u3096]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) + KATA_SHIFT)
   );
 }
 
-function applyKatakanaLongVowels(kana) {
+function applyKatakanaLongVowels(kana: string) {
   return kana
     .replace(/アア/g, 'アー')
     .replace(/イイ/g, 'イー')
@@ -18,7 +18,9 @@ function applyKatakanaLongVowels(kana) {
     .replace(/オウ/g, 'オー');
 }
 
-export function convertKana(input, { mode = 'hiragana' } = {}) {
+export type KanaMode = 'hiragana' | 'katakana' | 'none';
+
+export function convertKana(input: string, { mode = 'hiragana' }: { mode?: KanaMode } = {}) {
   const s = (input ?? '').normalize('NFKC');
   if (mode === 'none') return s;
 

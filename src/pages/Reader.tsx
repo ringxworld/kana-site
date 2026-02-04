@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
-import Nav from '../components/Nav.jsx';
-import { parseFuriganaGroups, parsePairs } from '../lib/reader.js';
+import Nav from '../components/Nav';
+import { parseFuriganaGroups, parsePairs, type FuriganaToken, type ReaderPair } from '../lib/reader';
 
 const FONT_KEY = 'jp_reader_font';
 const FS_KEY = 'jp_reader_fs';
@@ -9,7 +9,7 @@ const FURI_KEY = 'jp_reader_furi';
 const KEEP_PARENS_KEY = 'jp_reader_keep_parens';
 const SHOW_ALL_EN_KEY = 'jp_reader_show_all_en';
 
-const fontMap = {
+const fontMap: Record<string, string> = {
   yuji_mai:
     '"Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
   serif: '"Noto Serif JP","Yu Mincho","MS Mincho",serif',
@@ -28,7 +28,7 @@ const fontMap = {
   system_gothic: '"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
 };
 
-function renderTokens(tokens) {
+function renderTokens(tokens: FuriganaToken[]) {
   return tokens.map((tok, idx) => {
     if (tok.t === 'text') return <React.Fragment key={idx}>{tok.v}</React.Fragment>;
     return (
@@ -42,8 +42,8 @@ function renderTokens(tokens) {
 
 export default function Reader() {
   const [inputText, setInputText] = useState('');
-  const [pairs, setPairs] = useState([]);
-  const [openStates, setOpenStates] = useState([]);
+  const [pairs, setPairs] = useState<ReaderPair[]>([]);
+  const [openStates, setOpenStates] = useState<boolean[]>([]);
   const [showFuri, setShowFuri] = useState(true);
   const [showAllEn, setShowAllEn] = useState(false);
   const [keepParens, setKeepParens] = useState(false);
@@ -128,7 +128,7 @@ export default function Reader() {
   useEffect(() => {
     if (!pairs.length) return;
     setOpenStates(pairs.map(() => showAllEn));
-  }, [showAllEn]);
+  }, [showAllEn, pairs.length]);
 
   const parsedOutput = useMemo(() => {
     return pairs.map((pair) => ({
@@ -149,7 +149,7 @@ export default function Reader() {
     setOpenStates([]);
   }
 
-  async function handleFile(e) {
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files && e.target.files[0];
     if (!file) return;
     const text = await file.text();
@@ -159,7 +159,7 @@ export default function Reader() {
     setOpenStates(nextPairs.map(() => showAllEn));
   }
 
-  function toggleEn(idx) {
+  function toggleEn(idx: number) {
     if (showAllEn) return;
     setOpenStates((prev) => prev.map((val, i) => (i === idx ? !val : val)));
   }

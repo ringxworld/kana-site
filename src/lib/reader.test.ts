@@ -1,5 +1,5 @@
 ﻿import { describe, expect, it } from 'vitest';
-import { parseFuriganaGroups, parsePairs } from './reader.js';
+import { parseFuriganaGroups, parsePairs } from './reader';
 
 describe('parsePairs', () => {
   it('pairs JP + EN lines and allows blanks', () => {

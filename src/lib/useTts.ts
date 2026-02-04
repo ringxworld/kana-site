@@ -2,7 +2,9 @@
 
 function unlockAudioGesture() {
   try {
-    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const Ctx =
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
     const osc = ctx.createOscillator();
@@ -19,12 +21,14 @@ function unlockAudioGesture() {
   } catch {}
 }
 
+export type TtsStatus = 'locked' | 'ready' | 'unsupported' | 'error';
+
 export function useTts() {
-  const [status, setStatus] = useState('locked');
-  const [voices, setVoices] = useState([]);
+  const [status, setStatus] = useState<TtsStatus>('locked');
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState('');
   const ready = status === 'ready';
-  const voicesRef = useRef([]);
+  const voicesRef = useRef<SpeechSynthesisVoice[]>([]);
 
   const loadVoicesNow = useCallback(() => {
     const list = window.speechSynthesis.getVoices();
@@ -74,7 +78,7 @@ export function useTts() {
   }, [selectedVoice]);
 
   const speak = useCallback(
-    (text) => {
+    (text: string) => {
       if (!text) return;
       if (!('speechSynthesis' in window)) {
         setStatus('unsupported');

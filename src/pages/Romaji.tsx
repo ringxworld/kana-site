@@ -1,16 +1,16 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import Nav from '../components/Nav.jsx';
-import { convertKana } from '../lib/kana.js';
-import { initIme } from '../lib/imeGlue.js';
-import { useTts } from '../lib/useTts.js';
+import Nav from '../components/Nav';
+import { convertKana } from '../lib/kana';
+import { initIme } from '../lib/imeGlue';
+import { useTts } from '../lib/useTts';
 
 export default function Romaji() {
-  const [mode, setMode] = useState('hiragana');
+  const [mode, setMode] = useState<'hiragana' | 'katakana' | 'none'>('hiragana');
   const [text, setText] = useState('');
-  const inputRef = useRef(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isComposingRef = useRef(false);
-  const selectionRef = useRef(null);
-  const imeRef = useRef(null);
+  const selectionRef = useRef<{ start: number; end: number } | null>(null);
+  const imeRef = useRef<ReturnType<typeof initIme> | null>(null);
 
   useEffect(() => {
     document.body.classList.add('page-romaji');
@@ -49,16 +49,16 @@ export default function Romaji() {
     selectionRef.current = null;
   }, [text]);
 
-  function convertAll(value, nextMode = mode) {
+  function convertAll(value: string, nextMode: typeof mode = mode) {
     if (nextMode === 'none') return value;
     return convertKana(value, { mode: nextMode });
   }
 
-  function prefLen(value, cursor, nextMode = mode) {
+  function prefLen(value: string, cursor: number, nextMode: typeof mode = mode) {
     return convertAll(value.slice(0, cursor), nextMode).length;
   }
 
-  function applyConversion(value, nextMode = mode) {
+  function applyConversion(value: string, nextMode: typeof mode = mode) {
     const el = inputRef.current;
     if (!el) return;
 
@@ -78,9 +78,10 @@ export default function Romaji() {
     }
   }
 
-  function handleInput(e) {
+  function handleInput(e: React.ChangeEvent<HTMLTextAreaElement>) {
     const value = e.target.value;
-    const isComposing = e.nativeEvent?.isComposing || isComposingRef.current;
+    const nativeEvent = e.nativeEvent as InputEvent | undefined;
+    const isComposing = nativeEvent?.isComposing || isComposingRef.current;
     if (isComposing) {
       setText(value);
       return;
@@ -89,8 +90,8 @@ export default function Romaji() {
     applyConversion(value);
   }
 
-  function handleModeChange(e) {
-    const nextMode = e.target.value;
+  function handleModeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const nextMode = e.target.value as typeof mode;
     setMode(nextMode);
     const current = inputRef.current?.value ?? text;
     applyConversion(current, nextMode);
@@ -100,9 +101,9 @@ export default function Romaji() {
     isComposingRef.current = true;
   }
 
-  function handleCompositionEnd(e) {
+  function handleCompositionEnd(e: React.CompositionEvent<HTMLTextAreaElement>) {
     isComposingRef.current = false;
-    applyConversion(e.target.value);
+    applyConversion(e.currentTarget.value);
   }
 
   function handlePaste() {

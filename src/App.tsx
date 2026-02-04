@@ -1,8 +1,8 @@
 ﻿import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import Home from './pages/Home.jsx';
-import Romaji from './pages/Romaji.jsx';
-import Reader from './pages/Reader.jsx';
+import Home from './pages/Home';
+import Romaji from './pages/Romaji';
+import Reader from './pages/Reader';
 
 export default function App() {
   return (

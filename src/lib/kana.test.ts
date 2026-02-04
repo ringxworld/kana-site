@@ -1,5 +1,5 @@
 ﻿import { describe, expect, it } from 'vitest';
-import { convertKana } from './kana.js';
+import { convertKana } from './kana';
 
 describe('convertKana', () => {
   it('converts romaji to hiragana by default', () => {

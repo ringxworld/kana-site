@@ -1,8 +1,21 @@
-﻿export function hasJapaneseChars(line) {
+﻿export type ReaderPair = { jp: string; en: string };
+
+export type FuriganaToken =
+  | {
+      t: 'text';
+      v: string;
+    }
+  | {
+      t: 'furi';
+      base: string;
+      reading: string;
+    };
+
+export function hasJapaneseChars(line: string) {
   return /[\u3040-\u30ff\u3400-\u9fff]/.test(line);
 }
 
-export function looksEnglish(line) {
+export function looksEnglish(line: string) {
   const s = line.trim();
   if (!s) return false;
   if (hasJapaneseChars(s)) return false;
@@ -10,12 +23,12 @@ export function looksEnglish(line) {
   return latin >= 2;
 }
 
-export function parsePairs(input) {
+export function parsePairs(input: string) {
   const lines = input.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n');
-  const pairs = [];
+  const pairs: ReaderPair[] = [];
   let i = 0;
 
-  function nextNonEmpty(idx) {
+  function nextNonEmpty(idx: number) {
     while (idx < lines.length && lines[idx].trim() === '') idx += 1;
     return idx;
   }
@@ -47,8 +60,8 @@ export function parsePairs(input) {
   return pairs;
 }
 
-export function parseFuriganaGroups(raw, keepParens) {
-  const out = [];
+export function parseFuriganaGroups(raw: string, keepParens: boolean) {
+  const out: FuriganaToken[] = [];
   let i = 0;
 
   while (i < raw.length) {
