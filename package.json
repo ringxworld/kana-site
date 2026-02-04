@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "kana-kanji-ime",
   "version": "1.0.0",
   "description": "Browser Japanese IME using kuromoji + SKK dictionary",
@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite preview",
     "serve": "vite preview",
     "vendor:sync": "npx shx mkdir -p public/vendor/kuromoji public/vendor/ipadic && npx shx cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/ && npx shx cp -r node_modules/kuromoji/dict/* public/vendor/ipadic/",
     "fetch:skk": "npx shx mkdir -p public/dict && curl -L -o public/dict/SKK-JISYO.L https://skk-dev.github.io/dict/SKK-JISYO.L",
@@ -15,9 +16,13 @@
   },
   "dependencies": {
     "kuromoji": "^0.1.2",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
     "wanakana": "^5.1.0"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
     "connect-history-api-fallback": "^2.0.0",
     "eslint": "^9.0.0",
     "prettier": "^3.0.0",

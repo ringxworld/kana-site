@@ -27,6 +27,7 @@ coverage/
 # IDE / Editor
 .vscode/
 .idea/
+.vs/
 *.swp
 *.swo
 *.sublime-project

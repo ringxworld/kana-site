@@ -1,0 +1,125 @@
+﻿body.page-home {
+  --bg: #0b0f14;
+  --panel: #111824;
+  --muted: #152033;
+  --text: #e8eef7;
+  --sub: #a8b3c5;
+  --acc: #7aa2ff;
+  --ok: #22c55e;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --radius: 16px;
+  --pad: 16px;
+  --tap: 44px;
+}
+
+.page-home .home-header {
+  padding: 20px var(--pad) 10px;
+}
+
+.page-home .home-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-home .home-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.page-home .badge {
+  background: var(--muted);
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.page-home .top-nav {
+  margin-left: auto;
+}
+
+.page-home .nav-link {
+  color: var(--acc);
+  border: 1px solid var(--muted);
+}
+
+.page-home .nav-link.active {
+  border-color: var(--acc);
+}
+
+.page-home .home-container {
+  padding: var(--pad);
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.page-home .home-lead {
+  margin: 0 0 8px;
+}
+
+.page-home .home-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0.5rem 0;
+}
+
+.page-home .home-input {
+  width: 100%;
+  min-height: 260px;
+  background: #0a1220;
+  color: var(--text);
+  border: 1px solid #1f2a3a;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 18px;
+  line-height: 1.7;
+  resize: vertical;
+}
+
+.page-home button,
+.page-home select {
+  appearance: none;
+  border: 1px solid #293241;
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  min-height: var(--tap);
+}
+
+.page-home select:focus {
+  outline: 2px solid rgba(122, 162, 247, 0.45);
+  outline-offset: 2px;
+}
+
+.page-home select option {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.page-home button.primary {
+  background: linear-gradient(180deg, #486bff, #3a57d6);
+  border: none;
+}
+
+.page-home button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.page-home .hint {
+  color: var(--sub);
+  font-size: 12px;
+}
+
+.page-home .status {
+  font-size: 12px;
+  color: var(--sub);
+}

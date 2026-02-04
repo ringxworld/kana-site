@@ -1,16 +1,14 @@
-// vite.config.js
-import { defineConfig } from 'vite';
+﻿import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import fs from 'node:fs';
 import path from 'node:path';
 import serveStatic from 'serve-static';
 import history from 'connect-history-api-fallback';
 
 function ipadicRawMiddleware() {
-  // Connect-compatible handler
   const handler = (req, res, next) => {
     const url = req.url || '';
     if (url.startsWith('/vendor/ipadic/') && url.endsWith('.gz')) {
-      // Serve raw bytes from public/vendor/ipadic
       const diskPath = path.join(process.cwd(), 'public', url.replace(/^\/+/, ''));
       fs.readFile(diskPath, (err, data) => {
         if (err) {
@@ -18,18 +16,15 @@ function ipadicRawMiddleware() {
           res.setHeader('Content-Type', 'text/plain; charset=utf-8');
           return res.end('Not found');
         }
-        // IMPORTANT: send raw gzip with identity encoding
         res.setHeader('Content-Type', 'application/gzip');
         res.setHeader('Content-Encoding', 'identity');
         res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate, no-transform');
-        // Just in case anything upstream set it
         try {
           res.removeHeader('Content-Encoding');
         } catch {}
-        // Explicitly write the bytes and finish
         res.end(data);
       });
-      return; // handled
+      return;
     }
     next();
   };
@@ -37,8 +32,6 @@ function ipadicRawMiddleware() {
   return {
     name: 'ipadic-raw-top',
     configureServer(server) {
-      // Insert at the VERY FRONT of the connect stack
-      // (server.middlewares is a Connect app with a private .stack)
       const stack = server.middlewares.stack;
       stack.unshift({ route: '', handle: handler });
     },
@@ -46,21 +39,20 @@ function ipadicRawMiddleware() {
 }
 
 export default defineConfig({
+  base: './',
   server: {
     host: true,
     port: 5173,
-    // Optional global safety — but the top-of-stack middleware is the fix
     headers: {
-      // prevent proxies from “helpfully” transforming responses
       'Cache-Control': 'no-transform',
     },
   },
   plugins: [
-    ipadicRawMiddleware(), // <-- installs the top-of-stack handler
+    react(),
+    ipadicRawMiddleware(),
     {
       name: 'static-and-history',
       configureServer(server) {
-        // Normal static mounts (don’t set encodings here)
         server.middlewares.use('/vendor', serveStatic('public/vendor'));
         server.middlewares.use('/dict', serveStatic('public/dict'));
         server.middlewares.use('/js', serveStatic('public/js'));
@@ -72,7 +64,6 @@ export default defineConfig({
           next();
         });
 
-        // SPA fallback, but exclude our static prefixes
         server.middlewares.use(
           history({
             rewrites: [
