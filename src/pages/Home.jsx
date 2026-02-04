@@ -80,10 +80,12 @@ export default function Home() {
 
   function handleInput(e) {
     const value = e.target.value;
-    if (isComposingRef.current) {
+    const isComposing = e.nativeEvent?.isComposing || isComposingRef.current;
+    if (isComposing) {
       setText(value);
       return;
     }
+    if (isComposingRef.current) isComposingRef.current = false;
     applyConversion(value);
   }
 
@@ -108,6 +110,10 @@ export default function Home() {
       const value = inputRef.current?.value ?? '';
       applyConversion(value);
     }, 0);
+  }
+
+  function handleBlur() {
+    isComposingRef.current = false;
   }
 
   const ttsLabel =
@@ -174,6 +180,7 @@ export default function Home() {
           onCompositionStart={handleCompositionStart}
           onCompositionEnd={handleCompositionEnd}
           onPaste={handlePaste}
+          onBlur={handleBlur}
         />
 
         <div className="hint">
