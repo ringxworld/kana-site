@@ -1,0 +1,9 @@
+# Handle line endings
+* text=auto eol=lf
+
+# Explicitly set UTF-8 for web assets
+*.html text eol=lf
+*.css  text eol=lf
+*.js   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
