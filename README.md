@@ -1,6 +1,7 @@
 ﻿# Kana Site
 
 [![Deploy Pages](https://github.com/ringxworld/kana-site/actions/workflows/deploy.yml/badge.svg)](https://github.com/ringxworld/kana-site/actions/workflows/deploy.yml)
+[![CI](https://github.com/ringxworld/kana-site/actions/workflows/ci.yml/badge.svg)](https://github.com/ringxworld/kana-site/actions/workflows/ci.yml)
 
 A simple, self-contained web app for practicing Japanese typing and conversions.
 It takes romaji input and converts it to hiragana, katakana, or kanji suggestions — just like an IME, but in your browser.
