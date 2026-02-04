@@ -6,8 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d dist",
     "preview": "vite preview",
     "serve": "vite preview",
     "vendor:sync": "npx shx mkdir -p public/vendor/kuromoji public/vendor/ipadic && npx shx cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/ && npx shx cp -r node_modules/kuromoji/dict/* public/vendor/ipadic/",
@@ -27,7 +25,6 @@
     "@vitejs/plugin-react": "^4.3.1",
     "connect-history-api-fallback": "^2.0.0",
     "eslint": "^9.0.0",
-    "gh-pages": "^6.1.1",
     "prettier": "^3.0.0",
     "serve-static": "^2.2.0",
     "shx": "^0.4.0",
