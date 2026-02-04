@@ -1,6 +1,8 @@
-# Kana Site
+﻿# Kana Site
 
-A simple, self-contained web app for practicing Japanese typing and conversions.  
+[![Deploy Pages](https://github.com/ringxworld/kana-site/actions/workflows/deploy.yml/badge.svg)](https://github.com/ringxworld/kana-site/actions/workflows/deploy.yml)
+
+A simple, self-contained web app for practicing Japanese typing and conversions.
 It takes romaji input and converts it to hiragana, katakana, or kanji suggestions — just like an IME, but in your browser.
 
 [**→ Live Site**](https://ringxworld.github.io/kana-site/)
@@ -9,37 +11,47 @@ It takes romaji input and converts it to hiragana, katakana, or kanji suggestion
 
 ## Features
 
-- **Romaji → Kana conversion**  
+- **Romaji → Kana conversion**
   Type naturally (e.g. `nihongo`) and it instantly converts to `にほんご` or `ニホンゴ`.
 
-- **Kanji suggestions**  
-  Shows matching words like `日本語` for `にほんご`.  
+- **Kanji suggestions**
+  Shows matching words like `日本語` for `にほんご`.
   You can toggle or accept suggestions just like a normal IME.
 
-- **Text-to-Speech (TTS)**  
+- **Text-to-Speech (TTS)**
   Hear your text spoken with a Japanese voice — great for quick pronunciation checks.
 
-- **Keyboard-focused**  
-  Built to stay on the keyboard.  
-  Shortcuts like copy, clear, and toggle modes mean you never need the mouse.
+- **Furigana reader**
+  Paste paired JP/EN lines and render furigana with per-sentence English reveal.
 
-- **Offline-ready (PWA)**  
-  Works fully offline once loaded.  
-  You can even install it to your desktop or phone for quick access.
-
-- **Simple, single-page design**  
-  No dependencies, no frameworks, no nonsense — just a single HTML file that does everything.
+- **Single-page app**
+  Lightweight, client-only app built with React + Vite.
 
 ---
 
 ## Usage
 
 1. Type in romaji (e.g. `nihongo`).
-2. The text area below updates in real time.
+2. The text area updates in real time.
 3. Toggle between:
-   - Hiragana  
-   - Katakana  
-   - Kanji-suggestion mode
-4. Optionally use the **Speak** button to hear the text.
+   - Hiragana
+   - Katakana
+   - None
+4. Kanji suggestions appear for trailing hiragana.
+5. Optionally use the **Speak** button to hear the text.
 
 ---
+
+## Deployment (GitHub Pages)
+
+This repo uses a GitHub Actions workflow that builds and deploys the site to GitHub Pages.
+
+Recommended Pages settings:
+- Source: **GitHub Actions**
+
+Notes:
+- Do not commit `dist/` to `main`.
+- The workflow publishes `dist/` automatically.
+
+Manual build:
+- `npm run build`
