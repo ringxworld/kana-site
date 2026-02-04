@@ -1,4 +1,4 @@
-// public/js/ime-worker.js
+﻿// public/js/ime-worker.js
 // Classic Web Worker for JP IME: loads kuromoji, IPADIC, and SKK; serves suggestions.
 
 let tokenizer = null;
@@ -28,6 +28,22 @@ function rerank(reading, list) {
   const scored = list.map((w) => ({ w, s: userCounts[reading + '|' + w] || 0 }));
   scored.sort((a, b) => b.s - a.s);
   return scored.map((x) => x.w);
+}
+
+function lastKanaToken(text) {
+  if (!tokenizer || !text) return null;
+  try {
+    const tokens = tokenizer.tokenize(text);
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const surface = tokens[i].surface_form || '';
+      if (/[\u3041-\u3096\u30A1-\u30FA\u30FC]/.test(surface)) {
+        return tokens[i];
+      }
+    }
+  } catch (e) {
+    // ignore tokenization failures and fall back to regex tail
+  }
+  return null;
 }
 
 // --- INIT ---
@@ -134,16 +150,30 @@ function onSuggest(m) {
   try {
     let reading = m.reading || '';
     const srcText = m.text || '';
+    let replaceLength = 0;
+    let surface = '';
 
-    // 1) If no explicit reading, grab the trailing kana span (hiragana or katakana)
+    // 1) If no explicit reading, try tokenizer for last kana token
     if (!reading && srcText) {
-      const tail = srcText.match(/([ぁ-ゟーァ-ヿ・]+)$/); // any JP kana tail
-      if (tail) reading = tail[1];
+      const token = lastKanaToken(srcText);
+      if (token) {
+        surface = token.surface_form || '';
+        replaceLength = surface.length;
+        reading = token.reading ? hira(token.reading) : surface;
+      } else {
+        const tail = srcText.match(/([ぁ-ゖーァ-ヿ・]+)$/); // any JP kana tail
+        if (tail) {
+          reading = tail[1];
+          surface = reading;
+          replaceLength = reading.length;
+        }
+      }
     }
 
     // 2) If the tail contains ANY katakana, do NOT suggest kanji
     //    (users writing in katakana usually don't want kanji suggestions)
-    const hasKatakana = /[\u30A1-\u30FA\u30FC]/.test(reading); // includes long vowel mark
+    const hasKatakana =
+      /[\u30A1-\u30FA\u30FC]/.test(reading) || /[\u30A1-\u30FA\u30FC]/.test(surface);
     if (hasKatakana) {
       postMessage({ type: 'log', msg: `[suggest] skipped (katakana): "${reading}"` });
       return;
@@ -160,6 +190,7 @@ function onSuggest(m) {
     reading = reading.replace(/[\u30A1-\u30F6]/g, (ch) =>
       String.fromCharCode(ch.charCodeAt(0) - 0x60)
     );
+    if (!replaceLength && reading) replaceLength = reading.length;
 
     postMessage({ type: 'log', msg: `[suggest] reading(hira)="${reading}"` });
 
@@ -170,7 +201,7 @@ function onSuggest(m) {
     }
 
     const list = rerank(reading, base).slice(0, 20);
-    postMessage({ type: 'suggest', token: { reading }, candidates: list });
+    postMessage({ type: 'suggest', token: { reading, replaceLength }, candidates: list });
   } catch (e) {
     postMessage({ type: 'error', where: 'suggest', message: String(e) });
   }

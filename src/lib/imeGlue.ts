@@ -53,12 +53,14 @@ export function initIme({
   let currentReading = '';
   let currentList: string[] = [];
   let currentIndex = -1;
+  let currentReplaceLength = 0;
 
   function hidePopup() {
     popup.style.display = 'none';
     currentReading = '';
     currentList = [];
     currentIndex = -1;
+    currentReplaceLength = 0;
   }
 
   function positionPopup() {
@@ -79,12 +81,17 @@ export function initIme({
 
   function commitPick(kanji: string) {
     const v = textarea.value;
-    const match = v.match(/([ぁ-ゖー]+)$/);
-    if (match) {
-      const hira = match[1];
-      textarea.value = v.slice(0, v.length - hira.length) + kanji;
+    if (currentReplaceLength > 0 && v.length >= currentReplaceLength) {
+      const start = v.length - currentReplaceLength;
+      textarea.value = v.slice(0, start) + kanji;
     } else {
-      textarea.value = v + kanji;
+      const match = v.match(/([ぁ-ゖー]+)$/);
+      if (match) {
+        const hira = match[1];
+        textarea.value = v.slice(0, v.length - hira.length) + kanji;
+      } else {
+        textarea.value = v + kanji;
+      }
     }
     if (ime.isReady && currentReading && imeWorker) {
       imeWorker.postMessage({ type: 'commit', reading: currentReading, kanji });
@@ -94,10 +101,11 @@ export function initIme({
     textarea.focus();
   }
 
-  function renderPopup(reading: string, candidates: string[]) {
+  function renderPopup(reading: string, candidates: string[], replaceLength = 0) {
     currentReading = reading || '';
     currentList = candidates || [];
     currentIndex = currentList.length ? 0 : -1;
+    currentReplaceLength = replaceLength;
     if (!currentList.length) {
       hidePopup();
       return;
@@ -194,7 +202,7 @@ export function initIme({
       return;
     }
     if (msg.type === 'suggest') {
-      renderPopup(msg.token?.reading || '', msg.candidates || []);
+      renderPopup(msg.token?.reading || '', msg.candidates || [], msg.token?.replaceLength || 0);
       return;
     }
   };
