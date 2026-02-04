@@ -152,7 +152,11 @@ export function initIme({
   }
 
   function onMouseDown(ev: MouseEvent) {
-    if (popup.style.display === 'block' && !popup.contains(ev.target as Node) && ev.target !== textarea) {
+    if (
+      popup.style.display === 'block' &&
+      !popup.contains(ev.target as Node) &&
+      ev.target !== textarea
+    ) {
       hidePopup();
     }
   }

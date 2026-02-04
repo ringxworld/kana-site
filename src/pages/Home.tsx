@@ -15,7 +15,9 @@ export default function Home() {
           <div className="brand">
             <p className="eyebrow">Kana Site</p>
             <h1>Japanese typing tools</h1>
-            <p className="sub">Pick a tool to start practicing conversion, reading, or pronunciation.</p>
+            <p className="sub">
+              Pick a tool to start practicing conversion, reading, or pronunciation.
+            </p>
           </div>
           <Nav />
         </div>

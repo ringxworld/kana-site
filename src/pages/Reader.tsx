@@ -1,6 +1,11 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import Nav from '../components/Nav';
-import { parseFuriganaGroups, parsePairs, type FuriganaToken, type ReaderPair } from '../lib/reader';
+import {
+  parseFuriganaGroups,
+  parsePairs,
+  type FuriganaToken,
+  type ReaderPair,
+} from '../lib/reader';
 
 const FONT_KEY = 'jp_reader_font';
 const FS_KEY = 'jp_reader_fs';
@@ -105,7 +110,10 @@ export default function Reader() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.style.setProperty('--jp-font', fontMap[fontSelect] || fontMap.yuji_mai);
+    document.documentElement.style.setProperty(
+      '--jp-font',
+      fontMap[fontSelect] || fontMap.yuji_mai
+    );
   }, [fontSelect]);
 
   useEffect(() => {
@@ -196,12 +204,20 @@ export default function Reader() {
 
           <div className="row">
             <label>
-              <input type="checkbox" checked={showFuri} onChange={(e) => setShowFuri(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={showFuri}
+                onChange={(e) => setShowFuri(e.target.checked)}
+              />
               Show furigana
             </label>
 
             <label>
-              <input type="checkbox" checked={showAllEn} onChange={(e) => setShowAllEn(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={showAllEn}
+                onChange={(e) => setShowAllEn(e.target.checked)}
+              />
               Show all English
             </label>
 

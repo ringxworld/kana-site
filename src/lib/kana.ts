@@ -3,9 +3,7 @@
 const KATA_SHIFT = 0x60;
 
 function toKatakanaStr(s: string) {
-  return s.replace(/[\u3041-\u3096]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) + KATA_SHIFT)
-  );
+  return s.replace(/[\u3041-\u3096]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) + KATA_SHIFT));
 }
 
 function applyKatakanaLongVowels(kana: string) {

@@ -151,11 +151,19 @@ export default function Romaji() {
               </select>
             </label>
 
-            <button className="btn primary" onClick={initTts} disabled={ttsStatus === 'unsupported' || ttsReady}>
+            <button
+              className="btn primary"
+              onClick={initTts}
+              disabled={ttsStatus === 'unsupported' || ttsReady}
+            >
               {ttsReady ? 'Speech Ready ✓' : 'Enable Speech'}
             </button>
 
-            <button className="btn" onClick={() => speak(text)} disabled={!ttsReady || !text.trim()}>
+            <button
+              className="btn"
+              onClick={() => speak(text)}
+              disabled={!ttsReady || !text.trim()}
+            >
               Speak
             </button>
 
@@ -193,7 +201,8 @@ export default function Romaji() {
           />
 
           <p className="hint">
-            Tips: double consonants → っ, 'n' before non-vowel → ん, digraphs like sha/kyo/chu supported.
+            Tips: double consonants → っ, 'n' before non-vowel → ん, digraphs like sha/kyo/chu
+            supported.
           </p>
         </div>
       </main>

@@ -4,17 +4,19 @@ import { NavLink } from 'react-router-dom';
 export default function Nav() {
   return (
     <nav className="top-nav">
-      <NavLink
-        end
-        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
-        to="/"
-      >
+      <NavLink end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/">
         Tools
       </NavLink>
-      <NavLink className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/romaji">
+      <NavLink
+        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+        to="/romaji"
+      >
         Romaji
       </NavLink>
-      <NavLink className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/reader">
+      <NavLink
+        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+        to="/reader"
+      >
         Reader
       </NavLink>
     </nav>
