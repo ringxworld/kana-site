@@ -23,6 +23,10 @@ services:
       RUNNER_TOKEN: '${RUNNER_TOKEN}'
       LABELS: self-hosted,local
       RUNNER_WORKDIR: /tmp/runner
+    volumes:
+      # Docker socket mount lets the runner execute docker build / docker compose
+      # commands inside CI jobs (required for the docker-build quality gate).
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     profiles:
       - ci
