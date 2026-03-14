@@ -1,0 +1,23 @@
+name: PR Base Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-base-develop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce base branch as develop
+        env:
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "${PR_BASE}" != "develop" ]; then
+            echo "Pull requests must target 'develop'. Current base is '${PR_BASE}'."
+            exit 1
+          fi

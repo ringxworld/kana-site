@@ -1,0 +1,41 @@
+name: PR Template Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-template:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate required PR body fields
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          body="$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json body --jq '.body')"
+
+          if [ -z "$body" ]; then
+            echo "PR body is empty. Fill out the pull request template."
+            exit 1
+          fi
+
+          if grep -Eq '\\\\n' <<< "$body"; then
+            echo "PR body contains literal '\\n' sequences. Use real line breaks."
+            exit 1
+          fi
+
+          if ! grep -Eiq '(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+https://github.com/[a-zA-Z0-9_-]+/kana-site/issues/[0-9]+' <<< "$body"; then
+            echo "Missing issue-closing link (e.g. 'Closes https://github.com/shikarii/kana-site/issues/1')."
+            exit 1
+          fi
+
+          if ! grep -Eiq '(npm run test|vitest|manual validation|manual check|validation)' <<< "$body"; then
+            echo "Missing validation evidence section."
+            exit 1
+          fi
