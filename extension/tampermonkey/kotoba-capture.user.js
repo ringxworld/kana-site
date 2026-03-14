@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Kana Capture
+// @name         Kotoba Capture
 // @namespace    http://kotoba.local/
-// @version      0.1.0
-// @description  Select Japanese text on any page → enrich with furigana + translation via kana-site
+// @version      1.0.0
+// @description  Select Japanese text on any page → enrich with furigana + translation via kotoba-lab
 // @author       shikarii
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
