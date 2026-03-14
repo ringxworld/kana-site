@@ -34,6 +34,18 @@ Do not introduce or modify licensing terms without explicit maintainer approval.
 
 ## 2. Module Ownership and Boundaries
 
+This repository is transitioning to a full-stack project. The top-level layout is:
+
+```
+src/            — frontend (Vite + React + TypeScript)
+server/         — backend (Hono + Drizzle + SQLite/PostgreSQL) — planned
+```
+
+Each package has its own `package.json`, `tsconfig.json`, and nested `AGENT.md`.
+The root `AGENTS.md` rules apply to both; inner `AGENT.md` files refine scope-specific rules.
+
+### 2.1 Frontend layout (`src/`)
+
 ```
 src/
   components/   — reusable UI primitives (no page-level state or routing)
@@ -43,12 +55,56 @@ src/
   styles/       — global CSS and design tokens
 ```
 
-Import rules:
+Frontend import rules:
 
 - `lib/` must not import from `components/`, `pages/`, or `styles/`.
 - `components/` must not import from `pages/`.
 - `pages/` may import from `components/` and `lib/`.
 - Side effects (DOM events, localStorage) belong in `pages/` or explicit hook modules, never in `lib/`.
+- `src/` must never import from `server/`.
+
+### 2.2 Server layout (`server/`) — planned
+
+```
+server/
+  src/
+    config/     — env loading + zod validation. No direct process.env elsewhere.
+    db/         — Drizzle schema, migration scripts, seed helpers
+    routes/     — Hono route handlers (thin: validate, call service, respond)
+    services/   — business logic (sentence import, search, tokenization)
+    lib/        — generic helpers (logger, errors). No domain knowledge.
+  tests/
+  package.json
+  tsconfig.json
+  AGENT.md
+```
+
+Server layer dependency direction (hard rule):
+
+- `db/` imports only from `db/` and `lib/`
+- `services/` imports from `db/` and `lib/`
+- `routes/` imports from `services/` and `lib/`
+- `lib/` imports nothing from the project
+
+Disallowed on the server:
+
+- Direct SQL/DB calls inside route handlers — go through `services/`.
+- `process.env` outside `config/`.
+- Business logic embedded in route handlers.
+
+### 2.3 API contract between frontend and server
+
+- All routes are under `/api/v1/`.
+- Request/response shapes are defined as TypeScript interfaces in `server/src/routes/types.ts` and
+  mirrored in `src/types/api.ts` on the frontend. Both must stay in sync.
+- The frontend never imports server modules. Types are duplicated or generated, not shared via import.
+
+### 2.4 Database rules
+
+- Schema is the single source of truth. All changes go through Drizzle migrations — never raw ALTER.
+- SQLite for local development; PostgreSQL-compatible Drizzle driver for production.
+- No raw SQL outside `db/` — use Drizzle query builder everywhere else.
+- Seed scripts belong in `server/src/db/seed.ts`, not mixed into migration files.
 
 ## 3. Quality and Enforcement
 
@@ -67,6 +123,7 @@ docker compose -f docker/docker-compose.yml --profile ci ps runner
 ```
 
 **If Docker is not running:** STOP. Notify the user immediately:
+
 > "Docker is not available. Please start Docker Desktop before proceeding.
 > The CI runner and local quality gates require Docker to function."
 > Do not commit, push, or open PRs until Docker is confirmed running.
