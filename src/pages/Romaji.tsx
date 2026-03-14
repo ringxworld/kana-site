@@ -38,6 +38,7 @@ export default function Romaji() {
     voices,
     selectedVoice,
     setSelectedVoice,
+    hasJaVoice,
     init: initTts,
     speak,
     ready: ttsReady,
@@ -52,26 +53,26 @@ export default function Romaji() {
     selectionRef.current = null;
   }, [text]);
 
-  function convertAll(value: string, nextMode: typeof mode = mode) {
+  function convertAll(value: string, nextMode: typeof mode = mode, imeMode = true) {
     if (nextMode === 'none') return value;
-    return convertKana(value, { mode: nextMode });
+    return convertKana(value, { mode: nextMode, imeMode });
   }
 
-  function prefLen(value: string, cursor: number, nextMode: typeof mode = mode) {
-    return convertAll(value.slice(0, cursor), nextMode).length;
+  function prefLen(value: string, cursor: number, nextMode: typeof mode = mode, imeMode = true) {
+    return convertAll(value.slice(0, cursor), nextMode, imeMode).length;
   }
 
-  function applyConversion(value: string, nextMode: typeof mode = mode) {
+  function applyConversion(value: string, nextMode: typeof mode = mode, imeMode = true) {
     const el = inputRef.current;
     if (!el) return;
 
     const start = el.selectionStart ?? value.length;
     const end = el.selectionEnd ?? start;
-    const converted = convertAll(value, nextMode);
+    const converted = convertAll(value, nextMode, imeMode);
 
     if (converted !== value) {
-      const nextStart = prefLen(value, start, nextMode);
-      const nextEnd = prefLen(value, end, nextMode);
+      const nextStart = prefLen(value, start, nextMode, imeMode);
+      const nextEnd = prefLen(value, end, nextMode, imeMode);
       selectionRef.current = { start: nextStart, end: nextEnd };
       setText(converted);
       imeRef.current?.requestSuggest?.(converted);
@@ -119,6 +120,9 @@ export default function Romaji() {
   function handleBlur() {
     isComposingRef.current = false;
     imeRef.current?.clearCandidates();
+    // Commit any pending romaji (e.g. trailing 'n' → ん) on blur
+    const current = inputRef.current?.value ?? text;
+    applyConversion(current, mode, false);
   }
 
   const ttsLabel =
@@ -190,6 +194,12 @@ export default function Romaji() {
           </div>
 
           <div className="status">{ttsLabel}</div>
+          {ttsReady && voices.length > 0 && !hasJaVoice && (
+            <div className="status" style={{ color: 'var(--warn, #a07032)' }}>
+              No Japanese voice detected. Install a Japanese TTS voice in your OS language settings
+              for audio output.
+            </div>
+          )}
 
           <div className="input-area">
             <textarea

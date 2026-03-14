@@ -124,16 +124,18 @@ describe('useTts', () => {
     expect(result.current.status).toBe('unsupported');
   });
 
-  it('loads voices on mount when already available', () => {
+  it('loads voices on mount and defaults to the Japanese voice', () => {
     const { synth, voices } = makeSpeechSynthesisMock();
     installSynth(synth);
 
     const { result } = renderHook(() => useTts());
     expect(result.current.voices).toEqual(voices);
-    expect(result.current.selectedVoice).toBe(voices[0].name);
+    // Should pick the ja-JP voice (voices[1]) not the first English voice
+    expect(result.current.selectedVoice).toBe(voices[1].name);
+    expect(result.current.hasJaVoice).toBe(true);
   });
 
-  it('loads voices via onvoiceschanged when not available at mount', () => {
+  it('loads voices via onvoiceschanged and defaults to the Japanese voice', () => {
     const { synth, voices } = makeSpeechSynthesisMock();
     synth.getVoices.mockReturnValueOnce([]); // empty on first call
     installSynth(synth);
@@ -146,7 +148,20 @@ describe('useTts', () => {
     });
 
     expect(result.current.voices).toEqual(voices);
-    expect(result.current.selectedVoice).toBe(voices[0].name);
+    expect(result.current.selectedVoice).toBe(voices[1].name);
+  });
+
+  it('hasJaVoice is false when no Japanese voice is available', () => {
+    const { synth } = makeSpeechSynthesisMock();
+    synth.getVoices.mockReturnValue([
+      { name: 'Google US English', lang: 'en-US', default: true, localService: false, voiceURI: 'Google US English' } as SpeechSynthesisVoice,
+    ]);
+    installSynth(synth);
+
+    const { result } = renderHook(() => useTts());
+    expect(result.current.hasJaVoice).toBe(false);
+    // Falls back to list[0] when no Japanese voice
+    expect(result.current.selectedVoice).toBe('Google US English');
   });
 
   it('init() sets status to ready', () => {

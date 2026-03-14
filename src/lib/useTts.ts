@@ -35,7 +35,11 @@ export function useTts() {
     if (list && list.length) {
       voicesRef.current = list;
       setVoices(list);
-      setSelectedVoice((prev) => prev || list[0].name);
+      setSelectedVoice((prev) => {
+        if (prev) return prev;
+        const jpVoice = list.find((v) => /ja/i.test(v.lang));
+        return (jpVoice || list[0]).name;
+      });
       return true;
     }
     return false;
@@ -107,11 +111,14 @@ export function useTts() {
     [getSelectedVoice]
   );
 
+  const hasJaVoice = voices.some((v) => /ja/i.test(v.lang));
+
   return {
     status,
     voices,
     selectedVoice,
     setSelectedVoice,
+    hasJaVoice,
     init,
     speak,
     ready,
