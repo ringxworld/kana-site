@@ -4,7 +4,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile.ci
     environment:
-      KANA_CI_CONTAINER: "1"
+      KANA_CI_CONTAINER: '1'
     volumes:
       - ..:/app
       # Named volume shadows host node_modules so Linux platform packages
@@ -20,7 +20,7 @@ services:
     environment:
       RUNNER_NAME: local-runner
       REPO_URL: https://github.com/shikarii/kana-site
-      RUNNER_TOKEN: "${RUNNER_TOKEN}"
+      RUNNER_TOKEN: '${RUNNER_TOKEN}'
       LABELS: self-hosted,local
       RUNNER_WORKDIR: /tmp/runner
     restart: unless-stopped

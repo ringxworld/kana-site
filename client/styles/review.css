@@ -1,0 +1,112 @@
+.review-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.review-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--accent, #2a7a50);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.review-progress {
+  align-self: flex-end;
+  font-size: 0.85rem;
+  color: var(--muted, #666);
+}
+
+.review-status {
+  color: var(--muted, #666);
+}
+
+.review-done {
+  text-align: center;
+  padding: 2rem;
+}
+
+.review-done h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.review-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.review-front {
+  font-size: 2.2rem;
+  text-align: center;
+  padding: 2rem 1rem;
+  background: var(--surface, #f8f8f8);
+  border: 1px solid var(--border, #ddd);
+  border-radius: 10px;
+  width: 100%;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.review-flip {
+  padding: 0.5rem 1.5rem;
+}
+
+.review-back {
+  font-size: 1.3rem;
+  text-align: center;
+  color: var(--muted, #555);
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border, #ddd);
+  width: 100%;
+  text-align: center;
+}
+
+.review-ratings {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.rating-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  border: 1px solid var(--border, #ccc);
+  cursor: pointer;
+  font-size: 0.9rem;
+  background: var(--surface, #f5f5f5);
+}
+
+.rating-1 { border-color: #c0392b; color: #c0392b; }
+.rating-2 { border-color: #e67e22; color: #e67e22; }
+.rating-3 { border-color: #27ae60; color: #27ae60; }
+.rating-4 { border-color: #2980b9; color: #2980b9; }
+
+.rating-label { font-weight: 600; }
+
+.key-hint {
+  font-size: 0.75rem;
+  color: var(--muted, #888);
+}
+
+.review-meta {
+  font-size: 0.78rem;
+  color: var(--muted, #999);
+}

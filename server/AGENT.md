@@ -11,7 +11,7 @@ Layers:
 
 - `src/config/`    Load and validate all env vars (zod). No other file reads `process.env`.
 - `src/db/`        Drizzle schema, migration scripts, query helpers. No business logic here.
-- `src/services/`  Business logic: sentence import, full-text search, tokenization (kuromoji).
+- `src/services/`  Business logic: sentence import, FSRS scheduling, Anki import, search.
 - `src/routes/`    Thin Hono handlers: validate input, call a service, return JSON. Max 30 lines each.
 - `src/lib/`       Generic helpers (logger, error classes). No domain knowledge.
 
@@ -37,10 +37,13 @@ server/
       seed.ts          — optional seed data
     routes/
       sentences.ts     — GET /api/v1/sentences, POST /api/v1/sentences/import
+      decks.ts         — full deck/card/review CRUD + FSRS review endpoints
       index.ts         — Hono app assembly and route registration
-      types.ts         — request/response interface types (mirrored in src/types/api.ts)
+      types.ts         — request/response interface types (mirrored in client/types/api.ts)
     services/
-      sentenceService.ts   — CRUD and import logic
+      sentenceService.ts   — sentence CRUD and import logic
+      fsrsService.ts       — FSRS-4.5 pure scheduling functions (mirrors client/lib/fsrs.ts)
+      ankiImportService.ts — .apkg ZIP extraction + SQLite parse + deck insert
       searchService.ts     — FTS query building
     lib/
       logger.ts
@@ -76,7 +79,7 @@ If a handler needs more, move the logic into a service.
 ## 6. Sentence import format
 
 The `.txt` import format is JP/EN paired lines (same format the frontend Reader already
-understands). The import service must use the same `parsePairs` logic from `src/lib/reader.ts`
+understands). The import service must use the same `parsePairs` logic from `client/lib/reader.ts`
 or a copy of it — do not duplicate the parsing logic with different behavior.
 
 ## 7. Search
@@ -84,6 +87,43 @@ or a copy of it — do not duplicate the parsing logic with different behavior.
 - SQLite FTS5 virtual table for full-text search across `japanese` and `english` columns.
 - Kuromoji (already in the repo as a web worker asset) may be loaded server-side for
   morphological tokenization of search queries. Keep it behind `services/searchService.ts`.
+
+## 10. FSRS service contract
+
+`server/src/services/fsrsService.ts` must implement the same pure functions as `client/lib/fsrs.ts`:
+
+- `retrievability(t, S)` — forgetting curve
+- `nextInterval(S, r?)` — days until next review
+- `scheduleCard(state, rating, now)` — returns updated `FsrsState`
+
+Both files use FSRS-4.5 parameters:
+`W = [0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474, 0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755]`
+
+If algorithm parameters or update formulas change, both files must be updated together.
+
+## 11. Anki import
+
+`server/src/services/ankiImportService.ts` uses:
+- `adm-zip` to unzip the `.apkg` buffer in memory
+- `better-sqlite3` to open `collection.anki2` from the extracted buffer
+- Notes table: `flds` field delimited by `\x1f`; field[0]=front, field[1]=back
+- Creates a deck record, bulk-inserts cards, initializes `card_scheduling` rows (state='new')
+
+Client-side offline equivalent uses `fflate` (ZIP) + `sql.js` (WASM SQLite) instead.
+
+## 12. DB schema additions
+
+Tables added for flashcard SRS:
+
+| Table | Purpose |
+|-------|---------|
+| `decks` | Deck name, description, created_at |
+| `cards` | front/back per deck, FK to decks (cascade delete) |
+| `card_scheduling` | One FSRS state row per card (PK=cardId) |
+| `reviews` | Append-only review history |
+
+All table definitions live in `server/src/db/schema.ts`.
+Migrations run via `server/src/db/setup.ts` (CREATE TABLE IF NOT EXISTS pattern).
 
 ## 8. Testing expectations
 
@@ -100,4 +140,6 @@ A server PR is not acceptable unless:
 - Route handlers call exactly one service.
 - New service logic has unit tests.
 - `npm run build` and `npm run test` in `server/` pass clean.
-- `types.ts` in `routes/` and `src/types/api.ts` in the frontend are kept in sync.
+- `types.ts` in `routes/` and `client/types/api.ts` in the frontend are kept in sync.
+- FSRS logic in `fsrsService.ts` matches `client/lib/fsrs.ts` exactly.
+- Anki import service has unit tests with a real (in-memory) `.apkg` fixture or mocked ZIP.

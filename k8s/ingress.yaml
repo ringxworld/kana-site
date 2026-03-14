@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kana-ingress
+  namespace: kana
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kana-server
+                port:
+                  number: 3001
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: kana-client
+                port:
+                  number: 80

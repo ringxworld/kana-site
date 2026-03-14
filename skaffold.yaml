@@ -1,0 +1,32 @@
+apiVersion: skaffold/v4beta11
+kind: Config
+metadata:
+  name: kana-site
+
+build:
+  artifacts:
+    - image: kana-client
+      docker:
+        dockerfile: docker/Dockerfile.client
+    - image: kana-server
+      docker:
+        dockerfile: docker/Dockerfile.server
+  local:
+    push: false
+
+deploy:
+  kubectl:
+    manifests:
+      - k8s/*.yaml
+
+portForward:
+  - resourceType: service
+    resourceName: kana-client
+    namespace: kana
+    port: 80
+    localPort: 8080
+  - resourceType: service
+    resourceName: kana-server
+    namespace: kana
+    port: 3001
+    localPort: 3001

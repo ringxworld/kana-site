@@ -29,14 +29,14 @@ in a Node environment.
 
 ## Key Libraries
 
-| Library | Purpose |
-|---------|---------|
-| kuromoji | Morphological analysis of Japanese text |
-| wanakana | Romaji to kana transliteration |
-| react-router-dom | Client-side routing |
-| Vite | Build tool and dev server |
-| Vitest | Unit test runner |
-| ESLint + Prettier | Code quality and formatting |
+| Library           | Purpose                                 |
+| ----------------- | --------------------------------------- |
+| kuromoji          | Morphological analysis of Japanese text |
+| wanakana          | Romaji to kana transliteration          |
+| react-router-dom  | Client-side routing                     |
+| Vite              | Build tool and dev server               |
+| Vitest            | Unit test runner                        |
+| ESLint + Prettier | Code quality and formatting             |
 
 ## Dictionary
 

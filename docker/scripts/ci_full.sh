@@ -63,9 +63,15 @@ npm run lint:check
 echo "[3/4] typecheck..."
 npm run typecheck
 
-echo "[4/4] install deps and run tests..."
+echo "[4/5] install deps and run client tests..."
 npm ci
 npm run test:run
+
+echo "[5/5] install server deps and run server tests..."
+cd "$ROOT/server"
+npm ci
+npm run test
+cd "$ROOT"
 
 echo ""
 echo "==> ci_full: build..."
