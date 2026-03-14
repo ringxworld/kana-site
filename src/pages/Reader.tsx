@@ -136,7 +136,7 @@ export default function Reader() {
   useEffect(() => {
     if (!pairs.length) return;
     setOpenStates(pairs.map(() => showAllEn));
-  }, [showAllEn, pairs.length]);
+  }, [showAllEn, pairs]);
 
   const parsedOutput = useMemo(() => {
     return pairs.map((pair) => ({
