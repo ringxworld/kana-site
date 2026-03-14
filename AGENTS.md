@@ -142,8 +142,8 @@ Run this check at the start of every session:
 # 1. Verify Docker is available
 docker info > /dev/null 2>&1 || echo "DOCKER NOT RUNNING"
 
-# 2. Check runner status
-docker compose -f docker/docker-compose.yml --profile ci ps runner-kana runner-atitd
+# 2. Check runner status (managed by shikarii/ci-infra)
+docker ps --filter "name=runner-kana" --format "{{.Names}}: {{.Status}}"
 ```
 
 **If Docker is not running:** STOP. Notify the user immediately:
@@ -152,29 +152,17 @@ docker compose -f docker/docker-compose.yml --profile ci ps runner-kana runner-a
 > The CI runner and local quality gates require Docker to function."
 > Do not commit, push, or open PRs until Docker is confirmed running.
 
-**If the runner containers are not up or not healthy:** start them automatically:
+**If the runner container is not up:** runners are managed by the `shikarii/ci-infra` repo.
+Start them from that repo:
 
 ```bash
-bash docker/scripts/setup_runner.sh
+cd ~/path/to/ci-infra && bash scripts/setup.sh runner-kana
 ```
 
-There is **one named runner container per repo** (`runner-kana`, `runner-atitd`), all defined
-in `docker/docker-compose.yml` and started together. Each uses `ACCESS_TOKEN` (a single GitHub
-PAT stored in `docker/.env`) to auto-generate its registration token on every startup —
-no stale tokens, no manual re-setup after container recreations.
+The runner must be active before any PR is opened. PRs opened without an active runner
+will have their quality-gates jobs queued indefinitely until the runner comes online.
 
-**One-time PAT setup** (if `docker/.env` does not yet exist):
-1. Create a PAT at https://github.com/settings/tokens/new — scope: `repo`
-2. `echo "GH_PAT=ghp_xxxx" >> docker/.env` (`docker/.env` is gitignored; see `docker/.env.example`)
-3. `bash docker/scripts/setup_runner.sh`
-
-**Adding a new repo:** copy a `runner-*` block in `docker/docker-compose.yml`, set a unique
-`RUNNER_NAME` and `REPO_URL`, re-run `bash docker/scripts/setup_runner.sh`.
-
-The runners must be active before any PR is opened. PRs opened without active runners
-will have their quality-gates jobs queued indefinitely until the runners come online.
-
-All quality checks run locally. GitHub Actions route to the self-hosted runners (zero billing).
+All quality checks run locally. GitHub Actions routes to the self-hosted runner (zero billing).
 
 **On every commit** — fast gate (format + lint + typecheck):
 
