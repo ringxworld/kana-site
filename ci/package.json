@@ -1,0 +1,9 @@
+{
+  "name": "kana-ci",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@dagger.io/dagger": "^0.15.3"
+  }
+}
