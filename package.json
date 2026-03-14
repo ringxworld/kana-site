@@ -16,7 +16,8 @@
     "lint:check": "eslint \"client/**/*.{ts,tsx}\"",
     "test": "vitest",
     "test:run": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "fflate": "^0.8.2",
@@ -49,6 +50,7 @@
     "shx": "^0.4.0",
     "typescript": "^5.6.3",
     "vite": "^5.0.0",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "@playwright/test": "^1.50.0"
   }
 }
