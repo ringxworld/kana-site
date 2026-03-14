@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kana Capture</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div id="app">
+    <header>
+      <span class="logo">Kana Capture</span>
+    </header>
+
+    <section id="loading" class="state">
+      <p class="muted">Enriching…</p>
+    </section>
+
+    <section id="result" class="state hidden">
+      <div class="field">
+        <label>Original</label>
+        <p id="original" class="japanese"></p>
+      </div>
+      <div class="field">
+        <label>Furigana</label>
+        <p id="furigana" class="japanese ruby-text"></p>
+      </div>
+      <div class="field">
+        <label>Translation</label>
+        <p id="translation"></p>
+      </div>
+      <div class="field">
+        <label>Deck</label>
+        <select id="deck-select">
+          <option value="">— loading decks —</option>
+        </select>
+      </div>
+      <div class="actions">
+        <button id="save-btn" class="primary" disabled>Save card</button>
+        <button id="cancel-btn" class="secondary">Cancel</button>
+      </div>
+      <p id="model-tag" class="muted model-tag"></p>
+    </section>
+
+    <section id="done" class="state hidden">
+      <p class="success">Card saved ✓</p>
+    </section>
+
+    <section id="error" class="state hidden">
+      <p id="error-msg" class="danger"></p>
+    </section>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

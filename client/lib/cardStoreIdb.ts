@@ -30,7 +30,7 @@ interface IdbScheduling extends FsrsState {
   cardId: number;
 }
 
-const DB_NAME = 'kana-flashcards';
+const DB_NAME = 'kotoba-flashcards';
 const DB_VERSION = 1;
 
 async function openKanaDb(): Promise<IDBPDatabase> {

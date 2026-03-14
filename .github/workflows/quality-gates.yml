@@ -96,6 +96,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Build client image
-        run: docker build -f docker/Dockerfile.client -t kana-client:ci .
+        run: docker build -f docker/Dockerfile.client -t kotoba-client:ci .
       - name: Build server image
-        run: docker build -f docker/Dockerfile.server -t kana-server:ci .
+        run: docker build -f docker/Dockerfile.server -t kotoba-server:ci .

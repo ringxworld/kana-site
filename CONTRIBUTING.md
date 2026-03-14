@@ -3,8 +3,8 @@
 ## Setup
 
 ```bash
-git clone https://github.com/shikarii/kana-site
-cd kana-site
+git clone https://github.com/shikarii/kotoba-lab
+cd kotoba-lab
 npm install
 npm run setup          # sync vendor assets and fetch SKK dictionary
 bash scripts/setup_hooks.sh   # install git hooks (one-time)

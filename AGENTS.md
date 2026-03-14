@@ -39,7 +39,7 @@ The top-level layout is:
 ```
 client/         — frontend (Vite + React + TypeScript)
 server/         — backend (Hono + Drizzle + SQLite)
-k8s/            — Kubernetes manifests (namespace kana)
+k8s/            — Kubernetes manifests (namespace kotoba)
 docker/         — CI, production Dockerfiles, nginx config
 ```
 
@@ -143,7 +143,7 @@ Run this check at the start of every session:
 docker info > /dev/null 2>&1 || echo "DOCKER NOT RUNNING"
 
 # 2. Check runner status (managed by shikarii/ci-infra)
-docker ps --filter "name=runner-kana" --format "{{.Names}}: {{.Status}}"
+docker ps --filter "name=runner-kotoba" --format "{{.Names}}: {{.Status}}"
 ```
 
 **If Docker is not running:** STOP. Notify the user immediately:
@@ -156,7 +156,7 @@ docker ps --filter "name=runner-kana" --format "{{.Names}}: {{.Status}}"
 Start them from that repo:
 
 ```bash
-cd ~/path/to/ci-infra && bash scripts/setup.sh runner-kana
+cd ~/path/to/ci-infra && bash scripts/setup.sh runner-kotoba
 ```
 
 The runner must be active before any PR is opened. PRs opened without an active runner
@@ -260,9 +260,9 @@ This repository is PR-first and feature-branch-only for agent work:
 - Keep changes isolated to one human-readable feature branch per task.
 - After pushing, open or update a PR to `develop` and link the relevant issue URL.
 - Every PR must include at least one explicit issue reference using a full URL
-  (example: `https://github.com/shikarii/kana-site/issues/1`).
+  (example: `https://github.com/shikarii/kotoba-lab/issues/1`).
 - Include a closing keyword plus issue URL when appropriate
-  (example: `Closes https://github.com/shikarii/kana-site/issues/1`).
+  (example: `Closes https://github.com/shikarii/kotoba-lab/issues/1`).
 - Do not close implementation issues until the PR is merged.
 
 ## 8. Human-Facing Wording for Issues and PRs
@@ -327,7 +327,7 @@ If a file grows past these limits, split it immediately — do not defer.
 
 ## 12. Kubernetes and Deployment
 
-Production target is a local Kubernetes cluster (minikube or k3s), namespace `kana`.
+Production target is a local Kubernetes cluster (minikube or k3s), namespace `kotoba`.
 
 Manifest layout:
 
@@ -353,8 +353,8 @@ Local development workflow:
 
 ```bash
 eval $(minikube docker-env)
-docker build -f docker/Dockerfile.client -t kana-client:local .
-docker build -f docker/Dockerfile.server -t kana-server:local .
+docker build -f docker/Dockerfile.client -t kotoba-client:local .
+docker build -f docker/Dockerfile.server -t kotoba-server:local .
 kubectl apply -f k8s/
 ```
 

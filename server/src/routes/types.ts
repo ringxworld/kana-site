@@ -1,4 +1,4 @@
-/** Shared request/response types for the kana-site API.
+/** Shared request/response types for the kotoba-lab API.
  *  Mirror this file manually in client/types/api.ts for the frontend.
  *  The frontend must never import from server/. */
 
@@ -100,4 +100,27 @@ export interface AnkiImportResponse {
   deckId: number;
   imported: number;
   skipped: number;
+}
+
+// ─── Sentence enrichment ──────────────────────────────────────────────────────
+
+export interface EnrichRequest {
+  text: string;
+}
+
+export interface EnrichResponse {
+  original: string;
+  furigana: string;          // HTML ruby string
+  translation: string;
+  translationModel: string;  // e.g. 'qwen2.5:3b'
+  furiganaSource: string;    // e.g. 'kuroshiro'
+}
+
+export interface CaptureRequest {
+  text: string;
+  deckId: number;
+}
+
+export interface CaptureResponse extends EnrichResponse {
+  card: Card;
 }

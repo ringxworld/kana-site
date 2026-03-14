@@ -1,14 +1,14 @@
 apiVersion: skaffold/v4beta11
 kind: Config
 metadata:
-  name: kana-site
+  name: kotoba-lab
 
 build:
   artifacts:
-    - image: kana-client
+    - image: kotoba-client
       docker:
         dockerfile: docker/Dockerfile.client
-    - image: kana-server
+    - image: kotoba-server
       docker:
         dockerfile: docker/Dockerfile.server
   local:
@@ -21,12 +21,12 @@ deploy:
 
 portForward:
   - resourceType: service
-    resourceName: kana-client
-    namespace: kana
+    resourceName: kotoba-client
+    namespace: kotoba
     port: 80
     localPort: 8080
   - resourceType: service
-    resourceName: kana-server
-    namespace: kana
+    resourceName: kotoba-server
+    namespace: kotoba
     port: 3001
     localPort: 3001

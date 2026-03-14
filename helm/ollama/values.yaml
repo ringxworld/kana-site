@@ -1,0 +1,33 @@
+ollama:
+  models:
+    - qwen2.5:3b
+  gpu:
+    enabled: true
+    type: nvidia
+    number: 1
+
+resources:
+  limits:
+    memory: "4Gi"
+    nvidia.com/gpu: "1"
+  requests:
+    memory: "2Gi"
+
+persistentVolume:
+  enabled: true
+  size: 4Gi
+  storageClass: ""
+
+service:
+  type: ClusterIP
+  port: 11434
+
+livenessProbe:
+  enabled: true
+  initialDelaySeconds: 60
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10

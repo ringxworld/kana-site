@@ -7,7 +7,7 @@ Use real line breaks; do not include literal `\n` sequences.
 
 Use a closing keyword with a full URL (required):
 
-- Closes https://github.com/shikarii/kana-site/issues/<number>
+- Closes https://github.com/shikarii/kotoba-lab/issues/<number>
 
 ## Base Branch
 

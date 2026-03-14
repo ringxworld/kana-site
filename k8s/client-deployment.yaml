@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kana-client
-  namespace: kana
+  name: kotoba-client
+  namespace: kotoba
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: kana-client
+      app: kotoba-client
   template:
     metadata:
       labels:
-        app: kana-client
+        app: kotoba-client
     spec:
       containers:
         - name: client
-          image: kana-client:local
+          image: kotoba-client:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

@@ -32,6 +32,9 @@ export const cards = sqliteTable('cards', {
   front: text('front').notNull(),
   back: text('back').notNull(),
   createdAt: integer('created_at').notNull().default(sql`(unixepoch())`),
+  translationModel: text('translation_model'),
+  furiganaSource: text('furigana_source'),
+  enrichedAt: integer('enriched_at'),
 });
 
 export type CardRow = typeof cards.$inferSelect;
