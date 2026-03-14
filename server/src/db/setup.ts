@@ -74,4 +74,17 @@ export function setupDatabase() {
       scheduled_days INTEGER NOT NULL
     );
   `);
+
+  // Additive migrations — no-ops if columns already exist
+  for (const col of [
+    'ALTER TABLE cards ADD COLUMN translation_model TEXT',
+    'ALTER TABLE cards ADD COLUMN furigana_source TEXT',
+    'ALTER TABLE cards ADD COLUMN enriched_at INTEGER',
+  ]) {
+    try {
+      db.exec(col);
+    } catch {
+      // column already exists
+    }
+  }
 }

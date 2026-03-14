@@ -1,0 +1,81 @@
+:root {
+  --bg:     #1e1c18;
+  --panel:  #252320;
+  --ink:    #e3dccf;
+  --muted:  #80786b;
+  --line:   #302d28;
+  --accent: #3a9570;
+  --accent-strong: #2d7a5e;
+  --danger: #c44e44;
+  font-size: 13px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  width: 320px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+}
+
+header {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--accent);
+}
+
+#app > section {
+  padding: 12px 14px;
+}
+
+.hidden { display: none; }
+
+.field { margin-bottom: 10px; }
+.field label {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+
+.japanese { font-size: 15px; line-height: 2; }
+.ruby-text ruby rt { font-size: 10px; color: var(--muted); }
+
+select {
+  width: 100%;
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button {
+  flex: 1;
+  padding: 7px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+button.primary  { background: var(--accent-strong); color: #fff; }
+button.primary:disabled { opacity: .45; cursor: default; }
+button.secondary { background: var(--panel); color: var(--muted); border: 1px solid var(--line); }
+
+.muted  { color: var(--muted); font-size: 12px; }
+.danger { color: var(--danger); }
+.success { color: var(--accent); font-size: 14px; text-align: center; padding: 8px 0; }
+.model-tag { margin-top: 8px; text-align: right; }

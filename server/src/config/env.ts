@@ -4,6 +4,8 @@ const EnvSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   DB_PATH: z.string().default('./dev.db'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  OLLAMA_URL: z.string().default('http://ollama:11434'),
+  OLLAMA_MODEL: z.string().default('qwen2.5:3b'),
 });
 
 export type Config = z.infer<typeof EnvSchema>;

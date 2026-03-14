@@ -5,4 +5,6 @@ metadata:
   namespace: kana
 data:
   PORT: "3001"
-  CORS_ORIGIN: "http://localhost"
+  CORS_ORIGIN: "http://kana.local"
+  OLLAMA_URL: "http://ollama.kana.svc.cluster.local:11434"
+  OLLAMA_MODEL: "qwen2.5:3b"

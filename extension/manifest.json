@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Kana Capture",
+  "version": "0.1.0",
+  "description": "Select Japanese text on any page and save it as a flashcard in kana-site.",
+  "permissions": ["contextMenus", "storage", "activeTab"],
+  "host_permissions": [
+    "http://kana.local/*",
+    "http://localhost:3001/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Kana Capture"
+  },
+  "icons": {
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

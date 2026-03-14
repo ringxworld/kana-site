@@ -101,3 +101,26 @@ export interface AnkiImportResponse {
   imported: number;
   skipped: number;
 }
+
+// ─── Sentence enrichment ──────────────────────────────────────────────────────
+
+export interface EnrichRequest {
+  text: string;
+}
+
+export interface EnrichResponse {
+  original: string;
+  furigana: string;          // HTML ruby string
+  translation: string;
+  translationModel: string;  // e.g. 'qwen2.5:3b'
+  furiganaSource: string;    // e.g. 'kuroshiro'
+}
+
+export interface CaptureRequest {
+  text: string;
+  deckId: number;
+}
+
+export interface CaptureResponse extends EnrichResponse {
+  card: Card;
+}
