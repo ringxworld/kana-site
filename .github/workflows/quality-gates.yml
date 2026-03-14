@@ -101,6 +101,10 @@ jobs:
     runs-on: self-hosted
     timeout-minutes: 30
     needs: [client-quality, server-quality, loc-limits]
+    # DOCKER_BUILDKIT=0 uses the legacy builder, avoiding a known containerd
+    # snapshot-commit bug that can occur with BuildKit on self-hosted runners.
+    env:
+      DOCKER_BUILDKIT: '0'
     steps:
       - uses: actions/checkout@v6
       - name: Build client image
