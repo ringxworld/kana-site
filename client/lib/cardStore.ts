@@ -19,7 +19,11 @@ export interface CardStore {
   createDeck(name: string, description?: string): Promise<Deck>;
   deleteDeck(id: number): Promise<void>;
 
-  listCards(deckId: number, limit?: number, offset?: number): Promise<{ cards: Card[]; total: number }>;
+  listCards(
+    deckId: number,
+    limit?: number,
+    offset?: number
+  ): Promise<{ cards: Card[]; total: number }>;
   addCard(deckId: number, front: string, back: string): Promise<Card>;
   deleteCard(deckId: number, cardId: number): Promise<void>;
 

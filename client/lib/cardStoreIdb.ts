@@ -31,21 +31,63 @@ interface IdbScheduling extends FsrsState {
 }
 
 const DB_NAME = 'kotoba-flashcards';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
+
+const DEMO_SEED: [string, string][] = [
+  ['ありがとう', 'Thank you'],
+  ['すみません', "Excuse me / I'm sorry"],
+  ['はじめまして', 'Nice to meet you'],
+  ['おはようございます', 'Good morning'],
+  ['こんにちは', 'Hello / Good afternoon'],
+  ['こんばんは', 'Good evening'],
+  ['いただきます', "Let's eat (said before meals)"],
+  ['ただいま', "I'm home"],
+  ['よろしくお願いします', 'Please treat me well'],
+  ['水', 'Water (みず)'],
+];
 
 async function openKanaDb(): Promise<IDBPDatabase> {
   return openDB(DB_NAME, DB_VERSION, {
-    upgrade(db) {
-      const deckStore = db.createObjectStore('decks', { keyPath: 'id', autoIncrement: true });
-      deckStore.createIndex('createdAt', 'createdAt');
+    upgrade(db, oldVersion, _newVersion, transaction) {
+      if (oldVersion < 1) {
+        const deckStore = db.createObjectStore('decks', { keyPath: 'id', autoIncrement: true });
+        deckStore.createIndex('createdAt', 'createdAt');
 
-      const cardStore = db.createObjectStore('cards', { keyPath: 'id', autoIncrement: true });
-      cardStore.createIndex('deckId', 'deckId');
+        const cardStore = db.createObjectStore('cards', { keyPath: 'id', autoIncrement: true });
+        cardStore.createIndex('deckId', 'deckId');
 
-      db.createObjectStore('scheduling', { keyPath: 'cardId' });
+        db.createObjectStore('scheduling', { keyPath: 'cardId' });
 
-      const reviewStore = db.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true });
-      reviewStore.createIndex('cardId', 'cardId');
+        const reviewStore = db.createObjectStore('reviews', { keyPath: 'id', autoIncrement: true });
+        reviewStore.createIndex('cardId', 'cardId');
+      }
+
+      if (oldVersion < 2) {
+        // Seed a demo deck so first-time visitors see cards immediately.
+        // We use the native IDBTransaction (via the idb wrapper) to queue
+        // synchronous IDB requests — no await needed; the upgrade transaction
+        // stays open until all queued requests complete.
+        const idbTx = transaction as unknown as IDBTransaction;
+        const deckOS = idbTx.objectStore('decks');
+        const cardOS = idbTx.objectStore('cards');
+        const schedOS = idbTx.objectStore('scheduling');
+
+        const DECK_ID = 1;
+        const now = Date.now();
+
+        deckOS.add({
+          id: DECK_ID,
+          name: 'Japanese Basics',
+          description: 'Demo deck — greetings and everyday vocabulary',
+          createdAt: now,
+        });
+
+        DEMO_SEED.forEach(([front, back], i) => {
+          const cardId = i + 1;
+          cardOS.add({ id: cardId, deckId: DECK_ID, front, back, createdAt: now + i });
+          schedOS.add({ cardId, ...newFsrsState(now) });
+        });
+      }
     },
   });
 }

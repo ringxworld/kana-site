@@ -28,7 +28,9 @@ export default function Review() {
     }
   }, [store, deckId]);
 
-  useEffect(() => { void loadNext(); }, [loadNext]);
+  useEffect(() => {
+    void loadNext();
+  }, [loadNext]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -60,9 +62,7 @@ export default function Review() {
         &larr; Decks
       </button>
 
-      <div className="review-progress">
-        Reviewed this session: {reviewed}
-      </div>
+      <div className="review-progress">Reviewed this session: {reviewed}</div>
 
       {phase === 'loading' && <p className="review-status">Loading...</p>}
 

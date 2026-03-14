@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Nav from '../components/Nav';
-import { parseFuriganaGroups, parsePairs, type FuriganaToken, type ReaderPair } from '../lib/reader';
+import {
+  parseFuriganaGroups,
+  parsePairs,
+  type FuriganaToken,
+  type ReaderPair,
+} from '../lib/reader';
 import { useReaderPrefs, fontMap } from '../lib/useReaderPrefs';
 
 function renderTokens(tokens: FuriganaToken[]) {
@@ -19,8 +24,20 @@ export default function Reader() {
   const [inputText, setInputText] = useState('');
   const [pairs, setPairs] = useState<ReaderPair[]>([]);
   const [openStates, setOpenStates] = useState<boolean[]>([]);
-  const { showFuri, setShowFuri, showAllEn, setShowAllEn, keepParens, setKeepParens,
-          fontSelect, setFontSelect, fontSize, setFontSize, lineHeight, setLineHeight } = useReaderPrefs();
+  const {
+    showFuri,
+    setShowFuri,
+    showAllEn,
+    setShowAllEn,
+    keepParens,
+    setKeepParens,
+    fontSelect,
+    setFontSelect,
+    fontSize,
+    setFontSize,
+    lineHeight,
+    setLineHeight,
+  } = useReaderPrefs();
 
   useEffect(() => {
     document.body.classList.add('page-reader');
@@ -33,8 +50,9 @@ export default function Reader() {
   }, [showAllEn, pairs]);
 
   const parsedOutput = useMemo(
-    () => pairs.map((pair) => ({ ...pair, tokens: parseFuriganaGroups(pair.jp || '', keepParens) })),
-    [pairs, keepParens],
+    () =>
+      pairs.map((pair) => ({ ...pair, tokens: parseFuriganaGroups(pair.jp || '', keepParens) })),
+    [pairs, keepParens]
   );
 
   function handleRender() {
@@ -85,43 +103,72 @@ export default function Reader() {
         <div className="controls card">
           <div className="row">
             <input type="file" accept=".txt,.md,.text" onChange={handleFile} />
-            <button type="button" onClick={handleRender}>Render</button>
-            <button type="button" onClick={handleClear}>Clear</button>
+            <button type="button" onClick={handleRender}>
+              Render
+            </button>
+            <button type="button" onClick={handleClear}>
+              Clear
+            </button>
             <span className="pill">JP line then EN line. Blank lines allowed.</span>
           </div>
 
           <div className="row">
             <label>
-              <input type="checkbox" checked={showFuri} onChange={(e) => setShowFuri(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={showFuri}
+                onChange={(e) => setShowFuri(e.target.checked)}
+              />
               Show furigana
             </label>
             <label>
-              <input type="checkbox" checked={showAllEn} onChange={(e) => setShowAllEn(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={showAllEn}
+                onChange={(e) => setShowAllEn(e.target.checked)}
+              />
               Show all English
             </label>
             <label>
               Font
               <select value={fontSelect} onChange={(e) => setFontSelect(e.target.value)}>
                 {Object.keys(fontMap).map((k) => (
-                  <option key={k} value={k}>{k.replace(/_/g, ' ')}</option>
+                  <option key={k} value={k}>
+                    {k.replace(/_/g, ' ')}
+                  </option>
                 ))}
               </select>
             </label>
             <label>
               Font size
-              <input type="range" min="16" max="52" value={fontSize}
-                onChange={(e) => setFontSize(Number(e.target.value))} />
+              <input
+                type="range"
+                min="16"
+                max="52"
+                value={fontSize}
+                onChange={(e) => setFontSize(Number(e.target.value))}
+              />
               <span className="pill">{fontSize}px</span>
             </label>
             <label>
               Line height
-              <input type="range" min="1.4" max="2.4" step="0.05" value={lineHeight}
-                onChange={(e) => setLineHeight(Number(e.target.value))} />
+              <input
+                type="range"
+                min="1.4"
+                max="2.4"
+                step="0.05"
+                value={lineHeight}
+                onChange={(e) => setLineHeight(Number(e.target.value))}
+              />
               <span className="pill">{lineHeight}</span>
             </label>
             <label>
               Preserve outer parentheses
-              <input type="checkbox" checked={keepParens} onChange={(e) => setKeepParens(e.target.checked)} />
+              <input
+                type="checkbox"
+                checked={keepParens}
+                onChange={(e) => setKeepParens(e.target.checked)}
+              />
             </label>
           </div>
         </div>
@@ -147,8 +194,15 @@ English translation"
                   <div className="jp-row">
                     <div className="jp">{renderTokens(pair.tokens)}</div>
                     {hasEn && (
-                      <button className="enbtn" type="button" aria-pressed={isOpen}
-                        onClick={() => toggleEn(idx)} disabled={showAllEn}>EN</button>
+                      <button
+                        className="enbtn"
+                        type="button"
+                        aria-pressed={isOpen}
+                        onClick={() => toggleEn(idx)}
+                        disabled={showAllEn}
+                      >
+                        EN
+                      </button>
                     )}
                   </div>
                   {hasEn && <div className={`en ${isOpen ? '' : 'hidden'}`}>{pair.en}</div>}

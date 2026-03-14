@@ -26,13 +26,13 @@ export default function Browse() {
     setOffset(off);
   }
 
-  useEffect(() => { void load(0); }, [deckId]);
+  useEffect(() => {
+    void load(0);
+  }, [deckId]);
 
   const filtered = search
     ? cards.filter(
-        (c) =>
-          c.front.includes(search) ||
-          c.back.toLowerCase().includes(search.toLowerCase()),
+        (c) => c.front.includes(search) || c.back.toLowerCase().includes(search.toLowerCase())
       )
     : cards;
 
@@ -78,7 +78,9 @@ export default function Browse() {
             placeholder="Back (English / reading)"
             required
           />
-          <button type="submit" className="btn-primary">Add</button>
+          <button type="submit" className="btn-primary">
+            Add
+          </button>
         </form>
       )}
 
