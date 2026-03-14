@@ -46,8 +46,19 @@ function lastKanaToken(text) {
   return null;
 }
 
+// katakana helper (hiragana → katakana, counterpart to hira())
+function kata(str) {
+  return (str || '').replace(/[\u3041-\u3096]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) + 0x60)
+  );
+}
+
 // --- INIT ---
-async function init({ skkPath, kuromojiPath, ipadicPath }) {
+async function init({ skkPath, kuromojiPath, ipadicPath, userCounts: savedCounts }) {
+  if (savedCounts && typeof savedCounts === 'object') {
+    Object.assign(userCounts, savedCounts);
+    log(`[init] loaded ${Object.keys(savedCounts).length} learned entries`);
+  }
   try {
     log(`[init] kuromoji=${kuromojiPath} | ipadic=${ipadicPath} | skk=${skkPath}`);
 
@@ -170,37 +181,49 @@ function onSuggest(m) {
       }
     }
 
-    // 2) If the tail contains ANY katakana, do NOT suggest kanji
-    //    (users writing in katakana usually don't want kanji suggestions)
+    // 2) Normalize: if tail contains katakana, capture it as the katakana variant then
+    //    convert to hiragana for dictionary lookup.
     const hasKatakana =
       /[\u30A1-\u30FA\u30FC]/.test(reading) || /[\u30A1-\u30FA\u30FC]/.test(surface);
+    // kataVariant is the katakana form to offer as a candidate when in katakana mode
+    const kataVariant = hasKatakana ? surface || reading : null;
     if (hasKatakana) {
-      postMessage({ type: 'log', msg: `[suggest] skipped (katakana): "${reading}"` });
-      return;
+      reading = hira(reading);
     }
 
-    // 3) Proceed only with hiragana; normalize (no-op for hiragana)
+    // 3) Proceed only if hiragana is present after normalization
     if (!/[\u3041-\u3096]/.test(reading)) {
-      // no hiragana at end -> nothing to do
       postMessage({ type: 'log', msg: `[suggest] no hiragana tail in "${srcText}"` });
       return;
     }
 
-    // normalize any stray katakana to hiragana (shouldn't happen after the guard)
-    reading = reading.replace(/[\u30A1-\u30F6]/g, (ch) =>
-      String.fromCharCode(ch.charCodeAt(0) - 0x60)
-    );
     if (!replaceLength && reading) replaceLength = reading.length;
 
     postMessage({ type: 'log', msg: `[suggest] reading(hira)="${reading}"` });
 
     const base = skkMap.get(reading) || [];
-    if (!base.length) {
+
+    // In katakana mode the reading itself is a valid candidate; always show it even if
+    // the dictionary has no entries (e.g. foreign loanwords not in SKK).
+    if (!base.length && !kataVariant) {
       postMessage({ type: 'log', msg: `[suggest] candidates=0 for "${reading}"` });
       return;
     }
 
-    const list = rerank(reading, base).slice(0, 20);
+    let list = rerank(reading, base).slice(0, 20);
+
+    // Prepend katakana variant (e.g. ニホンゴ) as the first option so the user can
+    // keep katakana without converting to kanji.
+    if (kataVariant && !list.includes(kataVariant)) {
+      list = [kataVariant, ...list.slice(0, 19)];
+    }
+
+    // Also offer the hiragana form so users can convert katakana → hiragana.
+    const hiraVariant = kata(reading) !== reading ? reading : null;
+    if (hiraVariant && !list.includes(hiraVariant)) {
+      list = [list[0], hiraVariant, ...list.slice(1, 19)];
+    }
+
     postMessage({ type: 'suggest', token: { reading, replaceLength }, candidates: list });
   } catch (e) {
     postMessage({ type: 'error', where: 'suggest', message: String(e) });
