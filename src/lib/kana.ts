@@ -18,14 +18,17 @@ function applyKatakanaLongVowels(kana: string) {
 
 export type KanaMode = 'hiragana' | 'katakana' | 'none';
 
-export function convertKana(input: string, { mode = 'hiragana' }: { mode?: KanaMode } = {}) {
+export function convertKana(
+  input: string,
+  { mode = 'hiragana', imeMode = true }: { mode?: KanaMode; imeMode?: boolean } = {}
+) {
   const s = (input ?? '').normalize('NFKC');
   if (mode === 'none') return s;
 
   if (mode === 'katakana') {
-    const base = toKatakana(s);
+    const base = toKatakana(s, { IMEMode: imeMode });
     return applyKatakanaLongVowels(toKatakanaStr(base));
   }
 
-  return toHiragana(s);
+  return toHiragana(s, { IMEMode: imeMode });
 }

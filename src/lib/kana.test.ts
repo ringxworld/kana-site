@@ -18,15 +18,33 @@ describe('convertKana – hiragana mode', () => {
     expect(convertKana('zasshi')).toBe('ざっし');
   });
 
-  it('n before non-vowel or at string boundary becomes ん', () => {
-    // wanakana converts every standalone n-before-n to ん
-    expect(convertKana('nihon')).toBe('にほん');
+  it('n before vowel forms the correct kana (not ん prematurely)', () => {
+    // The core bug: with IMEMode=true, 'n' before a vowel must NOT become ん first
+    expect(convertKana('nokoru')).toBe('のこる');  // was broken: んおる
     expect(convertKana('nani')).toBe('なに');
+    expect(convertKana('neko')).toBe('ねこ');
   });
 
-  it('n before non-vowel becomes ん', () => {
+  it('n before consonant (mid-word) becomes ん', () => {
     expect(convertKana('nka')).toBe('んか');
     expect(convertKana('tanki')).toBe('たんき');
+    expect(convertKana('nihongo')).toBe('にほんご'); // n before g
+  });
+
+  it('trailing n stays pending during live typing (IMEMode default)', () => {
+    // In live-typing mode trailing 'n' is NOT committed — user must type 'nn' or another consonant
+    expect(convertKana('nihon')).toBe('にほn');
+    expect(convertKana('n')).toBe('n');
+  });
+
+  it('nn commits to ん in live mode', () => {
+    expect(convertKana('nn')).toBe('ん');
+    expect(convertKana('nihonn')).toBe('にほん');
+  });
+
+  it('trailing n finalizes to ん with imeMode:false (on blur)', () => {
+    expect(convertKana('nihon', { imeMode: false })).toBe('にほん');
+    expect(convertKana('n', { imeMode: false })).toBe('ん');
   });
 
   it('digraphs – sha / chi / tsu', () => {
@@ -77,8 +95,21 @@ describe('convertKana – katakana mode', () => {
     expect(convertKana('katta', { mode: 'katakana' })).toBe('カッタ');
   });
 
-  it('nn produces ン', () => {
-    expect(convertKana('nihon', { mode: 'katakana' })).toBe('ニホン');
+  it('trailing n stays pending in live mode', () => {
+    expect(convertKana('nihon', { mode: 'katakana' })).toBe('ニホn');
+    expect(convertKana('nihon', { mode: 'katakana', imeMode: false })).toBe('ニホン');
+  });
+
+  it('nn produces ン in live mode', () => {
+    expect(convertKana('nihonn', { mode: 'katakana' })).toBe('ニホン');
+  });
+
+  it('extended katakana – vu / vo / va / vi / ve', () => {
+    expect(convertKana('vu', { mode: 'katakana' })).toBe('ヴ');
+    expect(convertKana('vo', { mode: 'katakana' })).toBe('ヴォ');
+    expect(convertKana('va', { mode: 'katakana' })).toBe('ヴァ');
+    expect(convertKana('vi', { mode: 'katakana' })).toBe('ヴィ');
+    expect(convertKana('ve', { mode: 'katakana' })).toBe('ヴェ');
   });
 
   it('converts hiragana to katakana', () => {
