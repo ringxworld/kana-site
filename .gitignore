@@ -39,6 +39,9 @@ ehthumbs.db
 Icon?
 desktop.ini
 
+# Extension assets — explicitly track (Icon? above would block these otherwise)
+!extension/icons/
+
 # Misc
 *.log
 *.bak

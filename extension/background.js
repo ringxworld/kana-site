@@ -1,6 +1,6 @@
 browser.contextMenus.create({
   id: 'kotoba-capture',
-  title: 'Add to Kana',
+  title: 'Add to Kotoba',
   contexts: ['selection'],
 });
 

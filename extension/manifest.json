@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
-  "name": "Kana Capture",
-  "version": "0.1.0",
+  "name": "Kotoba",
+  "version": "1.0.0",
   "description": "Select Japanese text on any page and save it as a flashcard in kotoba-lab.",
   "permissions": ["contextMenus", "storage", "activeTab"],
   "host_permissions": [
@@ -13,10 +13,17 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Kana Capture"
+    "default_title": "Kotoba",
+    "default_icon": "icons/icon.svg"
   },
   "icons": {
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
+    "48": "icons/icon.svg",
+    "128": "icons/icon.svg"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "kotoba@kotoba.local",
+      "strict_min_version": "109.0"
+    }
   }
 }
