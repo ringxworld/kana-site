@@ -15,20 +15,47 @@ services:
     # Full gate:  docker compose -f docker/docker-compose.yml --profile ci run --rm ci
     # Fast gate:  docker compose -f docker/docker-compose.yml --profile ci run --rm ci bash docker/scripts/ci_part.sh
 
-  runner:
+  # ── Self-hosted runners ───────────────────────────────────────────────────────
+  # One named service per repo. All share the same GH_PAT from docker/.env.
+  # ACCESS_TOKEN lets each container auto-generate its registration token on every
+  # startup — no stale RUNNER_TOKEN, no manual re-setup after container recreation.
+  #
+  # Add a new repo: copy one of the runner blocks, set a unique RUNNER_NAME and REPO_URL.
+  #
+  # Setup:  bash docker/scripts/setup_runner.sh
+  # Start:  docker compose -f docker/docker-compose.yml --profile ci up -d
+  # Stop:   docker compose -f docker/docker-compose.yml --profile ci stop
+
+  runner-kana:
     image: myoung34/github-runner:latest
     environment:
-      RUNNER_NAME: local-runner
+      RUNNER_NAME: local-runner-kana
       REPO_URL: https://github.com/shikarii/kana-site
-      RUNNER_TOKEN: "${RUNNER_TOKEN}"
+      # PAT stored in docker/.env (gitignored).  Needs "repo" scope.
+      ACCESS_TOKEN: "${GH_PAT}"
       LABELS: self-hosted,local
       RUNNER_WORKDIR: /tmp/runner
+    volumes:
+      # Docker socket mount lets the runner execute docker build / docker compose
+      # commands inside CI jobs (required for the docker-build quality gate).
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     profiles:
       - ci
-    # One-time setup: bash docker/scripts/setup_runner.sh
-    # Start:  docker compose -f docker/docker-compose.yml --profile ci up -d runner
-    # Stop:   docker compose -f docker/docker-compose.yml --profile ci stop runner
+
+  runner-atitd:
+    image: myoung34/github-runner:latest
+    environment:
+      RUNNER_NAME: local-runner-atitd
+      REPO_URL: https://github.com/shikarii/AtitdScripts
+      ACCESS_TOKEN: "${GH_PAT}"
+      LABELS: self-hosted,local
+      RUNNER_WORKDIR: /tmp/runner-atitd
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    profiles:
+      - ci
 
 volumes:
   ci_node_modules:
