@@ -16,9 +16,15 @@ export function toDeck(row: typeof decks.$inferSelect): Deck {
 }
 
 export function toCard(
-  row: Pick<typeof cards.$inferSelect, 'id' | 'deckId' | 'front' | 'back' | 'createdAt'>,
+  row: Pick<typeof cards.$inferSelect, 'id' | 'deckId' | 'front' | 'back' | 'createdAt'>
 ): Card {
-  return { id: row.id, deckId: row.deckId, front: row.front, back: row.back, createdAt: row.createdAt };
+  return {
+    id: row.id,
+    deckId: row.deckId,
+    front: row.front,
+    back: row.back,
+    createdAt: row.createdAt,
+  };
 }
 
 // ─── Deck CRUD ────────────────────────────────────────────────────────────────
@@ -42,21 +48,45 @@ export function deleteDeck(id: number): void {
 
 // ─── Card CRUD ────────────────────────────────────────────────────────────────
 
-export function listCards(deckId: number, limit = 50, offset = 0): { cards: Card[]; total: number } {
+export function listCards(
+  deckId: number,
+  limit = 50,
+  offset = 0
+): { cards: Card[]; total: number } {
   const rawDb = getRawDb();
-  const total = (rawDb.prepare('SELECT COUNT(*) as n FROM cards WHERE deck_id = ?').get(deckId) as { n: number }).n;
+  const total = (
+    rawDb.prepare('SELECT COUNT(*) as n FROM cards WHERE deck_id = ?').get(deckId) as { n: number }
+  ).n;
   const rows = rawDb
-    .prepare('SELECT id, deck_id, front, back, created_at FROM cards WHERE deck_id = ? ORDER BY id LIMIT ? OFFSET ?')
-    .all(deckId, limit, offset) as Array<{ id: number; deck_id: number; front: string; back: string; created_at: number }>;
+    .prepare(
+      'SELECT id, deck_id, front, back, created_at FROM cards WHERE deck_id = ? ORDER BY id LIMIT ? OFFSET ?'
+    )
+    .all(deckId, limit, offset) as Array<{
+    id: number;
+    deck_id: number;
+    front: string;
+    back: string;
+    created_at: number;
+  }>;
   return {
-    cards: rows.map((r) => ({ id: r.id, deckId: r.deck_id, front: r.front, back: r.back, createdAt: r.created_at })),
+    cards: rows.map((r) => ({
+      id: r.id,
+      deckId: r.deck_id,
+      front: r.front,
+      back: r.back,
+      createdAt: r.created_at,
+    })),
     total,
   };
 }
 
 export function createCard(deckId: number, { front, back }: CreateCardRequest): Card {
   const db = getDb();
-  const card = db.insert(cards).values({ deckId, front, back, createdAt: Math.floor(Date.now() / 1000) }).returning().get();
+  const card = db
+    .insert(cards)
+    .values({ deckId, front, back, createdAt: Math.floor(Date.now() / 1000) })
+    .returning()
+    .get();
   const fsrs = newFsrsState(Date.now());
   db.insert(cardScheduling)
     .values({

@@ -8,7 +8,8 @@ const KEEP_PARENS_KEY = 'jp_reader_keep_parens';
 const SHOW_ALL_EN_KEY = 'jp_reader_show_all_en';
 
 export const fontMap: Record<string, string> = {
-  yuji_mai: '"Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+  yuji_mai:
+    '"Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
   serif: '"Noto Serif JP","Yu Mincho","MS Mincho",serif',
   sans: '"Noto Sans JP","Noto Sans","Yu Gothic","Meiryo",sans-serif',
   shippori: '"Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
@@ -17,8 +18,10 @@ export const fontMap: Record<string, string> = {
   yusei: '"Yusei Magic","Noto Sans JP","Yu Gothic","Meiryo",sans-serif',
   kaisei_decol: '"Kaisei Decol","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
   zen_kurenaido: '"Zen Kurenaido","Noto Sans JP","Yu Gothic","Meiryo",sans-serif',
-  zin_bokuryu: '"Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
-  zin_bokuryu_hard: '"Zin Hena Bokuryu RDF","Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+  zin_bokuryu:
+    '"Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Shippori Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
+  zin_bokuryu_hard:
+    '"Zin Hena Bokuryu RDF","Zin Hena Bokuryu RCF","Yuji Mai","Hina Mincho","Noto Serif JP","Yu Mincho","MS Mincho",serif',
   system_mincho: '"Yu Mincho","Hiragino Mincho ProN","MS Mincho",serif',
   system_gothic: '"Yu Gothic","Hiragino Kaku Gothic ProN","Meiryo",sans-serif',
 };
@@ -65,7 +68,9 @@ export function useReaderPrefs(): ReaderPrefs {
   font-weight: normal; font-style: normal; font-display: swap;
 }`;
     document.head.appendChild(style);
-    return () => { style.remove(); };
+    return () => {
+      style.remove();
+    };
   }, []);
 
   // Restore from localStorage on mount
@@ -85,9 +90,18 @@ export function useReaderPrefs(): ReaderPrefs {
   }, []);
 
   // Sync CSS variables
-  useEffect(() => { document.documentElement.style.setProperty('--jp-font', fontMap[fontSelect] || fontMap.yuji_mai); }, [fontSelect]);
-  useEffect(() => { document.documentElement.style.setProperty('--fs', `${fontSize}px`); }, [fontSize]);
-  useEffect(() => { document.documentElement.style.setProperty('--lh', String(lineHeight)); }, [lineHeight]);
+  useEffect(() => {
+    document.documentElement.style.setProperty(
+      '--jp-font',
+      fontMap[fontSelect] || fontMap.yuji_mai
+    );
+  }, [fontSelect]);
+  useEffect(() => {
+    document.documentElement.style.setProperty('--fs', `${fontSize}px`);
+  }, [fontSize]);
+  useEffect(() => {
+    document.documentElement.style.setProperty('--lh', String(lineHeight));
+  }, [lineHeight]);
 
   // Persist to localStorage
   useEffect(() => {
@@ -99,5 +113,18 @@ export function useReaderPrefs(): ReaderPrefs {
     localStorage.setItem(SHOW_ALL_EN_KEY, showAllEn ? '1' : '0');
   }, [fontSelect, fontSize, lineHeight, showFuri, keepParens, showAllEn]);
 
-  return { showFuri, setShowFuri, showAllEn, setShowAllEn, keepParens, setKeepParens, fontSelect, setFontSelect, fontSize, setFontSize, lineHeight, setLineHeight };
+  return {
+    showFuri,
+    setShowFuri,
+    showAllEn,
+    setShowAllEn,
+    keepParens,
+    setKeepParens,
+    fontSelect,
+    setFontSelect,
+    fontSize,
+    setFontSize,
+    lineHeight,
+    setLineHeight,
+  };
 }

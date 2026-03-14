@@ -10,8 +10,8 @@
 
 // FSRS-4.5 default weights (17 parameters)
 const W = [
-  0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474,
-  0.1367, 1.0461, 2.1072, 0.0793, 0.3246, 1.587, 0.2272, 2.8755,
+  0.4872, 1.4003, 3.7145, 13.8206, 5.1618, 1.2298, 0.8975, 0.031, 1.6474, 0.1367, 1.0461, 2.1072,
+  0.0793, 0.3246, 1.587, 0.2272, 2.8755,
 ];
 
 const DECAY = -0.5;
@@ -113,7 +113,7 @@ export function scheduleCard(state: FsrsState, rating: Rating, now: number): Fsr
   let newStability: number;
   let newDifficulty: number;
   let newState: CardState;
-  let newReps = state.reps + 1;
+  const newReps = state.reps + 1;
   let newLapses = state.lapses;
 
   if (state.state === 'new') {

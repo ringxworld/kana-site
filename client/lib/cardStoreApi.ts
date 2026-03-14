@@ -4,7 +4,6 @@
  */
 
 import type { CardStore } from './cardStore';
-import type { CardWithSchedule } from '../types/api';
 import {
   apiListDecks,
   apiCreateDeck,

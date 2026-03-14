@@ -36,6 +36,7 @@ jobs:
         run: npm run build
 
   # ── Server (Hono / Node) ─────────────────────────────────────────────────────
+  # Node 22 LTS: better-sqlite3 has prebuilt binaries for 22; Node 24 does not yet.
   server-quality:
     runs-on: self-hosted
     timeout-minutes: 20
@@ -43,7 +44,7 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '22'
       - name: Install server dependencies
         working-directory: server
         run: npm ci

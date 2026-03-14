@@ -9,7 +9,7 @@
 import { openDB, type IDBPDatabase } from 'idb';
 import { scheduleCard, newFsrsState, type FsrsState } from './fsrs';
 import type { CardStore } from './cardStore';
-import type { Card, CardWithSchedule, Deck, DeckStats } from '../types/api';
+import type { Card, CardWithSchedule, Deck } from '../types/api';
 
 interface IdbDeck {
   id?: number;
@@ -28,16 +28,6 @@ interface IdbCard {
 
 interface IdbScheduling extends FsrsState {
   cardId: number;
-}
-
-interface IdbReview {
-  id?: number;
-  cardId: number;
-  rating: number;
-  state: string;
-  dueAt: number;
-  reviewedAt: number;
-  scheduledDays: number;
 }
 
 const DB_NAME = 'kana-flashcards';
@@ -107,7 +97,7 @@ export function createIdbCardStore(): CardStore {
   return {
     async listDecks() {
       const db = await getDb();
-      const rows = await db.getAll('decks') as Array<IdbDeck & { id: number }>;
+      const rows = (await db.getAll('decks')) as Array<IdbDeck & { id: number }>;
       return rows.sort((a, b) => a.createdAt - b.createdAt).map(toDeck);
     },
 
@@ -134,7 +124,9 @@ export function createIdbCardStore(): CardStore {
 
     async listCards(deckId, limit = 50, offset = 0) {
       const db = await getDb();
-      const all = (await db.getAllFromIndex('cards', 'deckId', deckId)) as Array<IdbCard & { id: number }>;
+      const all = (await db.getAllFromIndex('cards', 'deckId', deckId)) as Array<
+        IdbCard & { id: number }
+      >;
       const sorted = all.sort((a, b) => a.id - b.id);
       return { cards: sorted.slice(offset, offset + limit).map(toCard), total: sorted.length };
     },
@@ -165,10 +157,10 @@ export function createIdbCardStore(): CardStore {
       const cardIds = (await db.getAllKeysFromIndex('cards', 'deckId', deckId)) as number[];
       let earliest: CardWithSchedule | null = null;
       for (const cid of cardIds) {
-        const sched = await db.get('scheduling', cid) as IdbScheduling | undefined;
+        const sched = (await db.get('scheduling', cid)) as IdbScheduling | undefined;
         if (!sched || sched.dueAt > now) continue;
         if (!earliest || sched.dueAt < earliest.scheduling.dueAt) {
-          const card = await db.get('cards', cid) as (IdbCard & { id: number }) | undefined;
+          const card = (await db.get('cards', cid)) as (IdbCard & { id: number }) | undefined;
           if (card) earliest = toCardWithSchedule(toCard(card), sched);
         }
       }
@@ -178,7 +170,7 @@ export function createIdbCardStore(): CardStore {
     async submitReview(_deckId, cardId, rating) {
       const db = await getDb();
       const now = Date.now();
-      const sched = await db.get('scheduling', cardId) as IdbScheduling | undefined;
+      const sched = (await db.get('scheduling', cardId)) as IdbScheduling | undefined;
       if (!sched) throw new Error(`No scheduling for card ${cardId}`);
 
       const next = scheduleCard(sched, rating, now);
@@ -193,7 +185,7 @@ export function createIdbCardStore(): CardStore {
         scheduledDays: next.scheduledDays,
       });
 
-      const card = await db.get('cards', cardId) as (IdbCard & { id: number });
+      const card = (await db.get('cards', cardId)) as IdbCard & { id: number };
       return toCardWithSchedule(toCard(card), nextSched);
     },
 
@@ -218,7 +210,7 @@ export function createIdbCardStore(): CardStore {
       let due = 0;
       const stateCounts: Record<string, number> = {};
       for (const cid of cardIds) {
-        const sched = await db.get('scheduling', cid) as IdbScheduling | undefined;
+        const sched = (await db.get('scheduling', cid)) as IdbScheduling | undefined;
         if (!sched) continue;
         stateCounts[sched.state] = (stateCounts[sched.state] ?? 0) + 1;
         if (sched.dueAt <= now) due++;
