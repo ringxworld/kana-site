@@ -36,8 +36,8 @@ bash docker/scripts/ci_full.sh   # full: all checks + tests + build
 
 ## Branches and PRs
 
-- Branch from `main`.
-- Never push directly to `main`.
+- Branch from `develop`.
+- Never push directly to `develop` or `main`.
 - Open a PR with a linked issue URL.
 - Fill out the pull request template completely.
 

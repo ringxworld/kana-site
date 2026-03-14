@@ -11,7 +11,7 @@ Use a closing keyword with a full URL (required):
 
 ## Base Branch
 
-- [ ] This PR targets `main`
+- [ ] This PR targets `develop`
 
 ## Validation
 

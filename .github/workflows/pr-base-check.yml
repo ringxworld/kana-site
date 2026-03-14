@@ -9,15 +9,15 @@ permissions:
   pull-requests: read
 
 jobs:
-  check-base-main:
+  check-base-develop:
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce base branch as main
+      - name: Enforce base branch as develop
         env:
           PR_BASE: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          if [ "${PR_BASE}" != "main" ]; then
-            echo "Pull requests must target 'main'. Current base is '${PR_BASE}'."
+          if [ "${PR_BASE}" != "develop" ]; then
+            echo "Pull requests must target 'develop'. Current base is '${PR_BASE}'."
             exit 1
           fi

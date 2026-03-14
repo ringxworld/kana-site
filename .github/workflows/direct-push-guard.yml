@@ -2,7 +2,7 @@ name: Direct Push Guard
 
 on:
   push:
-    branches: [main]
+    branches: [develop, main]
 
 permissions:
   contents: read
@@ -33,7 +33,7 @@ jobs:
               `- Commit: \`${commit}\``,
               `- Workflow run: ${runUrl}`,
               '',
-              'All changes must go through a pull request. Direct pushes to main are owner-only.',
+              'All changes must go through a pull request. Direct pushes to guarded branches are owner-only.',
             ].join('\n');
 
             await github.rest.issues.create({

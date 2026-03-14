@@ -166,17 +166,17 @@ After each completed prompt:
 2. Validate — run `bash docker/scripts/ci_full.sh`; all checks must pass
 3. Commit — pre-commit hook enforces format + lint + typecheck automatically
 4. Push feature branch — pre-push hook enforces full gate automatically
-5. Open PR to `main`
+5. Open PR to `develop`
 6. Merge via PR after gate passes and template is valid
 
 ## 7. Branch and PR Discipline
 
 This repository is PR-first and feature-branch-only for agent work:
 
-- Always branch from latest `main`.
-- Never commit directly to `main`.
+- Always branch from latest `develop`.
+- Never commit directly to `develop` or `main`.
 - Keep changes isolated to one human-readable feature branch per task.
-- After pushing, open or update a PR to `main` and link the relevant issue URL.
+- After pushing, open or update a PR to `develop` and link the relevant issue URL.
 - Every PR must include at least one explicit issue reference using a full URL
   (example: `https://github.com/shikarii/kana-site/issues/1`).
 - Include a closing keyword plus issue URL when appropriate
