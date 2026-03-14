@@ -5,9 +5,12 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
-# Jobs run on the local self-hosted runner (zero GitHub compute cost).
-# Start the runner before opening PRs: bash docker/scripts/setup_runner.sh
-# The runner container is defined in docker/docker-compose.yml under the ci profile.
+# Jobs run on the local self-hosted runner managed by shikarii/ci-infra.
+# client-quality and server-quality call Dagger pipelines (ci/) which cache
+# npm installs in persistent cache volumes — warm runs are ~60 s vs ~3 min cold.
+#
+# Local testing:  act pull_request  (requires .actrc in repo root)
+# Single job:     act pull_request -j client-quality
 
 permissions:
   contents: read
@@ -19,43 +22,26 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: dagger/dagger-for-github@v6
         with:
-          node-version: '24'
-      - name: Install client dependencies
-        run: npm ci
-      - name: Format check
-        run: npm run format -- --check
-      - name: Lint check
-        run: npm run lint:check
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Client tests
-        run: npm run test:run
-      - name: Build
-        run: npm run build
+          verb: call
+          module: ./ci
+          args: client-quality --source .
 
   # ── Server (Hono / Node) ─────────────────────────────────────────────────────
-  # Node 22 LTS: better-sqlite3 has prebuilt binaries for 22; Node 24 does not yet.
   server-quality:
     runs-on: self-hosted
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v4
+      - uses: dagger/dagger-for-github@v6
         with:
-          node-version: '22'
-      - name: Install server dependencies
-        working-directory: server
-        run: npm ci
-      - name: Server typecheck
-        working-directory: server
-        run: npx tsc --noEmit
-      - name: Server tests
-        working-directory: server
-        run: npm run test
+          verb: call
+          module: ./ci
+          args: server-quality --source .
 
   # ── LOC limits (AGENTS.md §11.5) ─────────────────────────────────────────────
+  # Pure file-size checks — no dependencies, no caching benefit from Dagger.
   loc-limits:
     runs-on: self-hosted
     timeout-minutes: 5
@@ -82,7 +68,7 @@ jobs:
               FAIL=1
             fi
           done < <(find server/src/services -name '*.ts' | tr '\n' '\0')
-          # Route handler files <= 100 lines (exclude types.ts / index.ts which are support files)
+          # Route handler files <= 100 lines (exclude types.ts / index.ts)
           while IFS= read -r -d '' f; do
             lines=$(wc -l < "$f")
             if (( lines > 100 )); then
@@ -97,12 +83,12 @@ jobs:
           echo "LOC check passed."
 
   # ── Docker build smoke-test ──────────────────────────────────────────────────
+  # Uses legacy builder (DOCKER_BUILDKIT=0) to avoid a known containerd
+  # snapshot-commit bug on self-hosted runners.
   docker-build:
     runs-on: self-hosted
     timeout-minutes: 30
     needs: [client-quality, server-quality, loc-limits]
-    # DOCKER_BUILDKIT=0 uses the legacy builder, avoiding a known containerd
-    # snapshot-commit bug that can occur with BuildKit on self-hosted runners.
     env:
       DOCKER_BUILDKIT: '0'
     steps:

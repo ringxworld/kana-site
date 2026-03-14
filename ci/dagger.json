@@ -1,0 +1,6 @@
+{
+  "name": "kana-ci",
+  "sdk": "typescript",
+  "source": "./",
+  "engineVersion": "v0.15.3"
+}
