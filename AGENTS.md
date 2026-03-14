@@ -34,24 +34,26 @@ Do not introduce or modify licensing terms without explicit maintainer approval.
 
 ## 2. Module Ownership and Boundaries
 
-This repository is transitioning to a full-stack project. The top-level layout is:
+The top-level layout is:
 
 ```
-src/            — frontend (Vite + React + TypeScript)
-server/         — backend (Hono + Drizzle + SQLite/PostgreSQL) — planned
+client/         — frontend (Vite + React + TypeScript)
+server/         — backend (Hono + Drizzle + SQLite)
+k8s/            — Kubernetes manifests (namespace kana)
+docker/         — CI, production Dockerfiles, nginx config
 ```
 
 Each package has its own `package.json`, `tsconfig.json`, and nested `AGENT.md`.
 The root `AGENTS.md` rules apply to both; inner `AGENT.md` files refine scope-specific rules.
 
-### 2.1 Frontend layout (`src/`)
+### 2.1 Frontend layout (`client/`)
 
 ```
-src/
+client/
   components/   — reusable UI primitives (no page-level state or routing)
   pages/        — route-level components (may compose components, own page state)
-  lib/          — pure logic: IME engine, dictionary parsing, kana conversion
-  types/        — shared TypeScript types and interfaces
+  lib/          — pure logic: IME, kana, FSRS scheduling, CardStore interface + implementations
+  types/        — shared TypeScript types and interfaces (mirrored from server/src/routes/types.ts)
   styles/       — global CSS and design tokens
 ```
 
@@ -60,10 +62,28 @@ Frontend import rules:
 - `lib/` must not import from `components/`, `pages/`, or `styles/`.
 - `components/` must not import from `pages/`.
 - `pages/` may import from `components/` and `lib/`.
-- Side effects (DOM events, localStorage) belong in `pages/` or explicit hook modules, never in `lib/`.
-- `src/` must never import from `server/`.
+- Side effects (DOM events, localStorage, IndexedDB) belong in `pages/` or explicit hook modules, never in `lib/`.
+- `client/` must never import from `server/`.
 
-### 2.2 Server layout (`server/`) — planned
+Key pure modules in `client/lib/`:
+
+- `fsrs.ts` — FSRS-4.5 scheduling algorithm. Pure functions only. No browser APIs.
+  Must stay logically identical to `server/src/services/fsrsService.ts`.
+- `cardStore.ts` — `CardStore` interface + `useCardStore()` hook that selects backend.
+- `cardStoreIdb.ts` — IndexedDB-backed implementation (offline mode). Uses `idb` package.
+- `cardStoreApi.ts` — REST API-backed implementation (online mode). Calls `/api/v1/`.
+
+### 2.5 Offline-first rule
+
+All flashcard functionality must work without a server:
+
+- `client/lib/fsrs.ts` and `client/lib/cardStoreIdb.ts` must have zero server dependencies.
+- If `VITE_API_URL` is unset or empty, `useCardStore()` returns the IndexedDB backend.
+- FSRS scheduling runs entirely in the browser when offline.
+- Anki `.apkg` import runs in the browser via `sql.js` (WASM SQLite) + `fflate` (ZIP) when offline.
+- The site must build and function correctly when deployed as static files (no server).
+
+### 2.2 Server layout (`server/`)
 
 ```
 server/
@@ -71,7 +91,7 @@ server/
     config/     — env loading + zod validation. No direct process.env elsewhere.
     db/         — Drizzle schema, migration scripts, seed helpers
     routes/     — Hono route handlers (thin: validate, call service, respond)
-    services/   — business logic (sentence import, search, tokenization)
+    services/   — business logic (sentences, FSRS scheduling, Anki import)
     lib/        — generic helpers (logger, errors). No domain knowledge.
   tests/
   package.json
@@ -96,8 +116,12 @@ Disallowed on the server:
 
 - All routes are under `/api/v1/`.
 - Request/response shapes are defined as TypeScript interfaces in `server/src/routes/types.ts` and
-  mirrored in `src/types/api.ts` on the frontend. Both must stay in sync.
+  mirrored in `client/types/api.ts` on the frontend. Both must stay in sync.
 - The frontend never imports server modules. Types are duplicated or generated, not shared via import.
+- Sentence endpoints: `GET /api/v1/sentences`, `POST /api/v1/sentences/import`
+- Deck/card/review endpoints: `GET|POST|DELETE /api/v1/decks`, `/api/v1/decks/:id/cards`,
+  `GET|POST /api/v1/decks/:id/review`, `GET /api/v1/decks/:id/stats`
+- Anki import: `POST /api/v1/decks/import/apkg` (multipart/form-data)
 
 ### 2.4 Database rules
 
@@ -119,7 +143,7 @@ Run this check at the start of every session:
 docker info > /dev/null 2>&1 || echo "DOCKER NOT RUNNING"
 
 # 2. Check runner status
-docker compose -f docker/docker-compose.yml --profile ci ps runner
+docker compose -f docker/docker-compose.yml --profile ci ps runner-kana runner-atitd
 ```
 
 **If Docker is not running:** STOP. Notify the user immediately:
@@ -128,16 +152,29 @@ docker compose -f docker/docker-compose.yml --profile ci ps runner
 > The CI runner and local quality gates require Docker to function."
 > Do not commit, push, or open PRs until Docker is confirmed running.
 
-**If the runner container is not up or not healthy:** start it automatically:
+**If the runner containers are not up or not healthy:** start them automatically:
 
 ```bash
 bash docker/scripts/setup_runner.sh
 ```
 
-The runner must be active before any PR is opened. PRs opened without an active runner
-will have their quality-gates jobs queued indefinitely until the runner comes online.
+There is **one named runner container per repo** (`runner-kana`, `runner-atitd`), all defined
+in `docker/docker-compose.yml` and started together. Each uses `ACCESS_TOKEN` (a single GitHub
+PAT stored in `docker/.env`) to auto-generate its registration token on every startup —
+no stale tokens, no manual re-setup after container recreations.
 
-All quality checks run locally. GitHub Actions route to the self-hosted runner (zero billing).
+**One-time PAT setup** (if `docker/.env` does not yet exist):
+1. Create a PAT at https://github.com/settings/tokens/new — scope: `repo`
+2. `echo "GH_PAT=ghp_xxxx" >> docker/.env` (`docker/.env` is gitignored; see `docker/.env.example`)
+3. `bash docker/scripts/setup_runner.sh`
+
+**Adding a new repo:** copy a `runner-*` block in `docker/docker-compose.yml`, set a unique
+`RUNNER_NAME` and `REPO_URL`, re-run `bash docker/scripts/setup_runner.sh`.
+
+The runners must be active before any PR is opened. PRs opened without active runners
+will have their quality-gates jobs queued indefinitely until the runners come online.
+
+All quality checks run locally. GitHub Actions route to the self-hosted runners (zero billing).
 
 **On every commit** — fast gate (format + lint + typecheck):
 
@@ -287,3 +324,57 @@ functions. Avoid monolithic state machines that mix input handling with renderin
 
 **Contract Payload Integrity** — Do not introduce mixed-type fields in any data contract.
 A field must have exactly one type across all code paths.
+
+## 11.5 File Size Limits
+
+Hard limits — enforced by CI (see `.github/workflows/quality-gates.yml` LOC check):
+
+- **No file > 300 lines** without explicit approval and justification in the PR description.
+- **No component > 200 lines** unless it is a route-level page (in `pages/`).
+- **No function > 50 lines.** Extract helpers or move logic into dedicated hooks / services.
+- Route handlers (`server/src/routes/`) target 30–50 lines. Business logic belongs in `services/`.
+- Service files (`server/src/services/`) target ≤ 200 lines. Split by domain when they grow.
+
+If a file grows past these limits, split it immediately — do not defer.
+
+## 12. Kubernetes and Deployment
+
+Production target is a local Kubernetes cluster (minikube or k3s), namespace `kana`.
+
+Manifest layout:
+
+```
+k8s/
+  namespace.yaml
+  client-deployment.yaml   — nginx serving dist/
+  client-service.yaml
+  server-deployment.yaml   — Hono API, mounts SQLite PVC
+  server-service.yaml
+  pvc.yaml                 — 1Gi ReadWriteOnce for SQLite data
+  ingress.yaml             — /api/* → server; /* → client
+  configmap.yaml           — PORT, CORS_ORIGIN
+  secret.yaml              — DB_PATH (example; user sets real value)
+```
+
+Images are built with:
+
+- `docker/Dockerfile.client` — multi-stage: Node build → nginx:1.27-alpine
+- `docker/Dockerfile.server` — Node 22-alpine runtime
+
+Local development workflow:
+
+```bash
+eval $(minikube docker-env)
+docker build -f docker/Dockerfile.client -t kana-client:local .
+docker build -f docker/Dockerfile.server -t kana-server:local .
+kubectl apply -f k8s/
+```
+
+Or use `skaffold dev` (requires `skaffold.yaml` in repo root) for hot-reload.
+
+Rules:
+
+- Never commit real secret values to `k8s/secret.yaml`. The file is an example template.
+- Keep Kubernetes manifests in sync with Docker image tags.
+- Any new env var exposed to the server must be added to both `configmap.yaml` / `secret.yaml`
+  and documented in `server/src/config/env.ts`.

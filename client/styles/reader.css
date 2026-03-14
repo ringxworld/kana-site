@@ -1,12 +1,6 @@
 ﻿body.page-reader {
   --jp-font:
-    "Yuji Mai",
-    "Hina Mincho",
-    "Shippori Mincho",
-    "Noto Serif JP",
-    "Yu Mincho",
-    "MS Mincho",
-    serif;
+    'Yuji Mai', 'Hina Mincho', 'Shippori Mincho', 'Noto Serif JP', 'Yu Mincho', 'MS Mincho', serif;
   --fs: 20px;
   --lh: 1.9;
 }
@@ -98,13 +92,7 @@
   padding: 12px;
   line-height: 1.5;
   font-size: 14px;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Consolas,
-    'Liberation Mono',
-    monospace;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
 }
 
 .page-reader .reader {

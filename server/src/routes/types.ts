@@ -1,5 +1,5 @@
 /** Shared request/response types for the kana-site API.
- *  Mirror this file manually in src/types/api.ts for the frontend.
+ *  Mirror this file manually in client/types/api.ts for the frontend.
  *  The frontend must never import from server/. */
 
 export interface Sentence {
@@ -37,4 +37,67 @@ export interface ImportResponse {
 
 export interface ErrorResponse {
   error: string;
+}
+
+// ─── Flashcard SRS ────────────────────────────────────────────────────────────
+
+export interface Deck {
+  id: number;
+  name: string;
+  description: string;
+  createdAt: number;
+}
+
+export interface Card {
+  id: number;
+  deckId: number;
+  front: string;
+  back: string;
+  createdAt: number;
+}
+
+export interface CardScheduling {
+  cardId: number;
+  stability: number;
+  difficulty: number;
+  elapsedDays: number;
+  scheduledDays: number;
+  reps: number;
+  lapses: number;
+  state: 'new' | 'learning' | 'review' | 'relearning';
+  dueAt: number;
+  lastReviewAt: number | null;
+}
+
+export interface CardWithSchedule extends Card {
+  scheduling: CardScheduling;
+}
+
+export interface DeckStats {
+  total: number;
+  due: number;
+  newCount: number;
+  learning: number;
+  review: number;
+}
+
+export interface CreateDeckRequest {
+  name: string;
+  description?: string;
+}
+
+export interface CreateCardRequest {
+  front: string;
+  back: string;
+}
+
+export interface SubmitReviewRequest {
+  cardId: number;
+  rating: 1 | 2 | 3 | 4;
+}
+
+export interface AnkiImportResponse {
+  deckId: number;
+  imported: number;
+  skipped: number;
 }

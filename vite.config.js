@@ -78,8 +78,8 @@ export default defineConfig({
   ],
   test: {
     environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    setupFiles: './client/test/setup.ts',
+    include: ['client/**/*.test.ts', 'client/**/*.test.tsx'],
     exclude: ['server/**', 'node_modules/**'],
   },
 });

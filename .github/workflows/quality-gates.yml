@@ -13,15 +13,16 @@ permissions:
   contents: read
 
 jobs:
-  typescript-quality:
+  # ── Client (Vite / React) ────────────────────────────────────────────────────
+  client-quality:
     runs-on: self-hosted
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v4
         with:
-          node-version: "24"
-      - name: Install npm dependencies
+          node-version: '24'
+      - name: Install client dependencies
         run: npm ci
       - name: Format check
         run: npm run format -- --check
@@ -29,7 +30,84 @@ jobs:
         run: npm run lint:check
       - name: Typecheck
         run: npm run typecheck
-      - name: Tests
+      - name: Client tests
         run: npm run test:run
       - name: Build
         run: npm run build
+
+  # ── Server (Hono / Node) ─────────────────────────────────────────────────────
+  # Node 22 LTS: better-sqlite3 has prebuilt binaries for 22; Node 24 does not yet.
+  server-quality:
+    runs-on: self-hosted
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+      - name: Server typecheck
+        working-directory: server
+        run: npx tsc --noEmit
+      - name: Server tests
+        working-directory: server
+        run: npm run test
+
+  # ── LOC limits (AGENTS.md §11.5) ─────────────────────────────────────────────
+  loc-limits:
+    runs-on: self-hosted
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check file LOC limits
+        shell: bash
+        run: |
+          set -euo pipefail
+          FAIL=0
+          # Root limit: no source file > 300 lines
+          while IFS= read -r -d '' f; do
+            lines=$(wc -l < "$f")
+            if (( lines > 300 )); then
+              echo "FAIL: $f has $lines lines (limit 300)"
+              FAIL=1
+            fi
+          done < <(find client server/src -name '*.ts' -o -name '*.tsx' | tr '\n' '\0')
+          # Tighter server limit: service files <= 200 lines
+          while IFS= read -r -d '' f; do
+            lines=$(wc -l < "$f")
+            if (( lines > 200 )); then
+              echo "FAIL: $f has $lines lines (server service limit 200)"
+              FAIL=1
+            fi
+          done < <(find server/src/services -name '*.ts' | tr '\n' '\0')
+          # Route handler files <= 100 lines (exclude types.ts / index.ts which are support files)
+          while IFS= read -r -d '' f; do
+            lines=$(wc -l < "$f")
+            if (( lines > 100 )); then
+              echo "FAIL: $f has $lines lines (route handler limit 100)"
+              FAIL=1
+            fi
+          done < <(find server/src/routes -name '*.ts' ! -name 'types.ts' ! -name 'index.ts' | tr '\n' '\0')
+          if (( FAIL )); then
+            echo "One or more files exceed LOC limits. See AGENTS.md §11.5."
+            exit 1
+          fi
+          echo "LOC check passed."
+
+  # ── Docker build smoke-test ──────────────────────────────────────────────────
+  docker-build:
+    runs-on: self-hosted
+    timeout-minutes: 30
+    needs: [client-quality, server-quality, loc-limits]
+    # DOCKER_BUILDKIT=0 uses the legacy builder, avoiding a known containerd
+    # snapshot-commit bug that can occur with BuildKit on self-hosted runners.
+    env:
+      DOCKER_BUILDKIT: '0'
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build client image
+        run: docker build -f docker/Dockerfile.client -t kana-client:ci .
+      - name: Build server image
+        run: docker build -f docker/Dockerfile.server -t kana-server:ci .

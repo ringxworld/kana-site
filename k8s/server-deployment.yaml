@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kana-server
+  namespace: kana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kana-server
+  template:
+    metadata:
+      labels:
+        app: kana-server
+    spec:
+      containers:
+        - name: server
+          image: kana-server:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: kana-config
+            - secretRef:
+                name: kana-secret
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: kana-data

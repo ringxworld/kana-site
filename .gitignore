@@ -47,3 +47,4 @@ desktop.ini
 # Service worker cache / generated blobs (if exporting builds)
 sw.js
 sw.*
+docker/.env

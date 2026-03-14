@@ -1,0 +1,103 @@
+.browse-page {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+.browse-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.browse-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  flex: 1;
+}
+
+.browse-back {
+  background: none;
+  border: none;
+  color: var(--accent, #2a7a50);
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.browse-add-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: var(--surface, #f5f5f5);
+  border-radius: 6px;
+}
+
+.browse-add-form input {
+  flex: 1;
+  min-width: 180px;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+.browse-search {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--border, #ccc);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  margin-bottom: 0.75rem;
+}
+
+.browse-count {
+  font-size: 0.85rem;
+  color: var(--muted, #666);
+  margin-bottom: 0.75rem;
+}
+
+.browse-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.browse-table th {
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 2px solid var(--border, #ddd);
+  color: var(--muted, #666);
+  font-weight: 600;
+}
+
+.browse-table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border, #eee);
+  vertical-align: top;
+}
+
+.card-front {
+  font-size: 1.1rem;
+  width: 45%;
+}
+
+.card-back {
+  color: var(--muted, #555);
+  width: 45%;
+}
+
+.browse-pagination {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  justify-content: center;
+  font-size: 0.9rem;
+  color: var(--muted, #666);
+}

@@ -56,7 +56,8 @@ a {
 .app-header {
   padding: 28px 0 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: radial-gradient(circle at top right, rgba(122, 162, 255, 0.12), transparent 45%),
+  background:
+    radial-gradient(circle at top right, rgba(122, 162, 255, 0.12), transparent 45%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent);
 }
 

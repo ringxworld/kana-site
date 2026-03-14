@@ -13,6 +13,6 @@
     "isolatedModules": true,
     "useDefineForClassFields": true
   },
-  "include": ["src"],
+  "include": ["client"],
   "exclude": ["node_modules", "dist"]
 }

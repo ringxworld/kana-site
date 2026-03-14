@@ -19,6 +19,12 @@ export default function Nav() {
       >
         Reader
       </NavLink>
+      <NavLink
+        className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')}
+        to="/decks"
+      >
+        Flashcards
+      </NavLink>
     </nav>
   );
 }
