@@ -54,20 +54,48 @@ echo ""
 echo "==> ci_full: full quality gate"
 echo ""
 
-echo "[1/4] format check..."
+echo "[1/6] format check..."
 npm run format -- --check
 
-echo "[2/4] lint check..."
+echo "[2/6] lint check..."
 npm run lint:check
 
-echo "[3/4] typecheck..."
+echo "[3/6] typecheck..."
 npm run typecheck
 
-echo "[4/5] install deps and run client tests..."
+echo "[4/6] LOC limits (AGENTS.md §11.5)..."
+FAIL=0
+while IFS= read -r -d '' f; do
+  lines=$(wc -l < "$f")
+  if (( lines > 300 )); then
+    echo "  FAIL: $f has $lines lines (limit 300)"
+    FAIL=1
+  fi
+done < <(find client server/src -name '*.ts' -o -name '*.tsx' | tr '\n' '\0')
+while IFS= read -r -d '' f; do
+  lines=$(wc -l < "$f")
+  if (( lines > 200 )); then
+    echo "  FAIL: $f has $lines lines (server service limit 200)"
+    FAIL=1
+  fi
+done < <(find server/src/services -name '*.ts' | tr '\n' '\0')
+while IFS= read -r -d '' f; do
+  lines=$(wc -l < "$f")
+  if (( lines > 100 )); then
+    echo "  FAIL: $f has $lines lines (route handler limit 100)"
+    FAIL=1
+  fi
+done < <(find server/src/routes -name '*.ts' ! -name 'types.ts' ! -name 'index.ts' | tr '\n' '\0')
+if (( FAIL )); then
+  echo "LOC check failed. See AGENTS.md §11.5."
+  exit 1
+fi
+
+echo "[5/6] install deps and run client tests..."
 npm ci
 npm run test:run
 
-echo "[5/5] install server deps and run server tests..."
+echo "[6/6] install server deps and run server tests..."
 cd "$ROOT/server"
 npm ci
 npm run test

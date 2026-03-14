@@ -56,8 +56,12 @@ server/
 
 ## 3. File size limits
 
-- No file over 200 lines. Route files target 30-50 lines.
-- No function over 40 lines. Extract helpers.
+Enforced by CI (root `AGENTS.md §11.5` applies; server limits are tighter):
+
+- No service file over 200 lines. Split by domain when they grow.
+- No route handler file over 100 lines. Route handlers target 30–50 lines. (`types.ts` and `index.ts` are exempt from this limit.)
+- No function over 40 lines. Extract helpers into the same service file or a new one.
+- No file over 300 lines under any circumstances.
 
 ## 4. Route handler rules
 

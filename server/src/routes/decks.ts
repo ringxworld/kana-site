@@ -1,17 +1,8 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import {
-  listDecks,
-  createDeck,
-  deleteDeck,
-  listCards,
-  createCard,
-  deleteCard,
-  nextDue,
-  submitReview,
-  deckStats,
-} from '../services/deckService';
+import { listDecks, createDeck, deleteDeck, listCards, createCard, deleteCard } from '../services/deckService';
+import { nextDue, submitReview, deckStats } from '../services/reviewService';
 import { importApkg } from '../services/ankiImportService';
 
 export const deckRoutes = new Hono();

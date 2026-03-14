@@ -312,6 +312,18 @@ functions. Avoid monolithic state machines that mix input handling with renderin
 **Contract Payload Integrity** — Do not introduce mixed-type fields in any data contract.
 A field must have exactly one type across all code paths.
 
+## 11.5 File Size Limits
+
+Hard limits — enforced by CI (see `.github/workflows/quality-gates.yml` LOC check):
+
+- **No file > 300 lines** without explicit approval and justification in the PR description.
+- **No component > 200 lines** unless it is a route-level page (in `pages/`).
+- **No function > 50 lines.** Extract helpers or move logic into dedicated hooks / services.
+- Route handlers (`server/src/routes/`) target 30–50 lines. Business logic belongs in `services/`.
+- Service files (`server/src/services/`) target ≤ 200 lines. Split by domain when they grow.
+
+If a file grows past these limits, split it immediately — do not defer.
+
 ## 12. Kubernetes and Deployment
 
 Production target is a local Kubernetes cluster (minikube or k3s), namespace `kana`.
