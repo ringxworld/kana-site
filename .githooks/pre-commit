@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# .githooks/pre-commit
+#
+# Fast quality gate — format + lint + typecheck (no tests, no build).
+# Runs automatically before every commit.
+# Skip with: git commit --no-verify
+#
+# Setup (one-time): bash scripts/setup_hooks.sh
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+exec bash docker/scripts/ci_part.sh

@@ -1,0 +1,50 @@
+name: Direct Push Guard
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  guard:
+    # shikarii (repo owner) and dependabot are the only allowed direct pushers.
+    if: ${{ github.actor != 'shikarii' && github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open security issue for non-owner direct push
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const actor = context.actor;
+            const branch = context.ref.replace('refs/heads/', '');
+            const commit = context.sha;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const issueTitle = `[security] Non-owner push to ${branch}: ${actor}`;
+            const issueBody = [
+              'A non-owner direct push was detected on a guarded branch.',
+              '',
+              `- Actor: @${actor}`,
+              `- Branch: \`${branch}\``,
+              `- Commit: \`${commit}\``,
+              `- Workflow run: ${runUrl}`,
+              '',
+              'All changes must go through a pull request. Direct pushes to main are owner-only.',
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['security'],
+            });
+
+      - name: Fail to raise visibility
+        run: |
+          echo "Direct pushes to guarded branches are owner-only."
+          exit 1

@@ -1,0 +1,35 @@
+name: Quality Gates
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+# Jobs run on the local self-hosted runner (zero GitHub compute cost).
+# Start the runner before opening PRs: bash docker/scripts/setup_runner.sh
+# The runner container is defined in docker/docker-compose.yml under the ci profile.
+
+permissions:
+  contents: read
+
+jobs:
+  typescript-quality:
+    runs-on: self-hosted
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: Install npm dependencies
+        run: npm ci
+      - name: Format check
+        run: npm run format -- --check
+      - name: Lint check
+        run: npm run lint:check
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Tests
+        run: npm run test:run
+      - name: Build
+        run: npm run build

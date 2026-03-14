@@ -1,0 +1,23 @@
+name: PR Base Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  check-base-main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce base branch as main
+        env:
+          PR_BASE: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "${PR_BASE}" != "main" ]; then
+            echo "Pull requests must target 'main'. Current base is '${PR_BASE}'."
+            exit 1
+          fi
