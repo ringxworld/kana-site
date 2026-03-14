@@ -13,7 +13,7 @@
 import { dag, Directory, object, func } from "@dagger.io/dagger";
 
 @object()
-class KanaCi {
+class KotobaLabCi {
   /**
    * Run client quality gates: prettier, eslint, typecheck, vitest, vite build,
    * and Playwright popup smoke tests.
