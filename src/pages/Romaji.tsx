@@ -1,12 +1,13 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Nav from '../components/Nav';
 import { convertKana } from '../lib/kana';
-import { initIme } from '../lib/imeGlue';
+import { initIme, type CandidateState } from '../lib/imeGlue';
 import { useTts } from '../lib/useTts';
 
 export default function Romaji() {
   const [mode, setMode] = useState<'hiragana' | 'katakana' | 'none'>('hiragana');
   const [text, setText] = useState('');
+  const [candidates, setCandidates] = useState<CandidateState | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isComposingRef = useRef(false);
   const selectionRef = useRef<{ start: number; end: number } | null>(null);
@@ -22,11 +23,13 @@ export default function Romaji() {
     const ime = initIme({
       textarea: inputRef.current,
       baseUrl: import.meta.env.BASE_URL,
+      onCandidates: setCandidates,
     });
     imeRef.current = ime;
     return () => {
       imeRef.current = null;
       ime?.cleanup?.();
+      setCandidates(null);
     };
   }, []);
 
@@ -115,6 +118,7 @@ export default function Romaji() {
 
   function handleBlur() {
     isComposingRef.current = false;
+    imeRef.current?.clearCandidates();
   }
 
   const ttsLabel =
@@ -187,22 +191,45 @@ export default function Romaji() {
 
           <div className="status">{ttsLabel}</div>
 
-          <textarea
-            ref={inputRef}
-            id="input"
-            className="input input-lg"
-            placeholder="Type romaji here..."
-            value={text}
-            onChange={handleInput}
-            onCompositionStart={handleCompositionStart}
-            onCompositionEnd={handleCompositionEnd}
-            onPaste={handlePaste}
-            onBlur={handleBlur}
-          />
+          <div className="input-area">
+            <textarea
+              ref={inputRef}
+              id="input"
+              className="input input-lg"
+              placeholder="Type romaji here..."
+              value={text}
+              onChange={handleInput}
+              onCompositionStart={handleCompositionStart}
+              onCompositionEnd={handleCompositionEnd}
+              onPaste={handlePaste}
+              onBlur={handleBlur}
+            />
+            {candidates && candidates.candidates.length > 0 && (
+              <div className="candidate-strip" role="listbox" aria-label="Kanji candidates">
+                <span className="candidate-reading">{candidates.reading}</span>
+                <div className="candidate-pills">
+                  {candidates.candidates.map((c, i) => (
+                    <button
+                      key={c}
+                      role="option"
+                      aria-selected={i === candidates.selectedIdx}
+                      className={`candidate-pill${i === candidates.selectedIdx ? ' selected' : ''}`}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        imeRef.current?.commitPick(c);
+                      }}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <p className="hint">
             Tips: double consonants → っ, 'n' before non-vowel → ん, digraphs like sha/kyo/chu
-            supported.
+            supported. Tab / ↑↓ to navigate candidates, Enter to commit.
           </p>
         </div>
       </main>

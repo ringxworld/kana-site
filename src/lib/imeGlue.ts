@@ -1,22 +1,53 @@
-﻿export type ImeHandle = {
+export type ImeHandle = {
   isReady: boolean;
   requestSuggest: (text?: string) => void;
+  commitPick: (kanji: string) => void;
+  clearCandidates: () => void;
   cleanup?: () => void;
 };
+
+export type CandidateState = {
+  reading: string;
+  candidates: string[];
+  replaceLength: number;
+  selectedIdx: number;
+};
+
+const LEARN_KEY = 'kana_ime_learn';
+
+function loadLearnedCounts(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(LEARN_KEY);
+    if (raw) return JSON.parse(raw) as Record<string, number>;
+  } catch {}
+  return {};
+}
+
+function saveLearnedCounts(counts: Record<string, number>) {
+  try {
+    localStorage.setItem(LEARN_KEY, JSON.stringify(counts));
+  } catch {}
+}
 
 export function initIme({
   textarea,
   baseUrl,
+  onCandidates,
 }: {
   textarea: HTMLTextAreaElement;
   baseUrl: string;
+  onCandidates?: (state: CandidateState | null) => void;
 }): ImeHandle | null {
   if (!textarea) return null;
 
   let imeWorker: Worker | null = null;
+  const learnedCounts = loadLearnedCounts();
+
   const ime: ImeHandle = {
     isReady: false,
     requestSuggest: () => {},
+    commitPick: () => {},
+    clearCandidates: () => {},
   };
 
   const queue: Array<{ type: 'suggest'; text: string }> = [];
@@ -31,55 +62,41 @@ export function initIme({
 
   window.IME = ime;
 
-  const popup = document.createElement('div');
-  Object.assign(popup.style, {
-    position: 'absolute',
-    display: 'none',
-    background: '#0f1725',
-    color: '#e6eefb',
-    border: '1px solid #293241',
-    borderRadius: '10px',
-    boxShadow: '0 10px 30px rgba(0,0,0,.35)',
-    zIndex: '9999',
-    minWidth: '220px',
-    maxWidth: '480px',
-    maxHeight: '320px',
-    overflowY: 'auto',
-    fontFamily:
-      "system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,'Noto Sans JP','Hiragino Kaku Gothic ProN',Meiryo,sans-serif",
-  } as CSSStyleDeclaration);
-  document.body.appendChild(popup);
-
   let currentReading = '';
   let currentList: string[] = [];
   let currentIndex = -1;
   let currentReplaceLength = 0;
 
-  function hidePopup() {
-    popup.style.display = 'none';
+  ime.clearCandidates = () => {
     currentReading = '';
     currentList = [];
     currentIndex = -1;
     currentReplaceLength = 0;
+    onCandidates?.(null);
+  };
+
+  function notifyCandidates() {
+    if (!currentList.length) {
+      onCandidates?.(null);
+      return;
+    }
+    onCandidates?.({
+      reading: currentReading,
+      candidates: currentList,
+      replaceLength: currentReplaceLength,
+      selectedIdx: currentIndex,
+    });
   }
 
-  function positionPopup() {
-    const r = textarea.getBoundingClientRect();
-    popup.style.left = window.scrollX + r.left + 'px';
-    popup.style.top = window.scrollY + (r.bottom + 6) + 'px';
-    popup.style.width = r.width + 'px';
+  function updateCandidates(reading: string, candidates: string[], replaceLength = 0) {
+    currentReading = reading || '';
+    currentList = candidates || [];
+    currentIndex = currentList.length ? 0 : -1;
+    currentReplaceLength = replaceLength;
+    notifyCandidates();
   }
 
-  function updateHighlight() {
-    const kids = Array.from(popup.children) as HTMLElement[];
-    kids.forEach(
-      (el, idx) => (el.style.background = idx === currentIndex ? '#152238' : 'transparent')
-    );
-    const active = kids[currentIndex];
-    if (active) active.scrollIntoView({ block: 'nearest' });
-  }
-
-  function commitPick(kanji: string) {
+  ime.commitPick = (kanji: string) => {
     const v = textarea.value;
     if (currentReplaceLength > 0 && v.length >= currentReplaceLength) {
       const start = v.length - currentReplaceLength;
@@ -96,96 +113,40 @@ export function initIme({
     if (ime.isReady && currentReading && imeWorker) {
       imeWorker.postMessage({ type: 'commit', reading: currentReading, kanji });
     }
-    hidePopup();
+    ime.clearCandidates();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
     textarea.focus();
-  }
-
-  function renderPopup(reading: string, candidates: string[], replaceLength = 0) {
-    currentReading = reading || '';
-    currentList = candidates || [];
-    currentIndex = currentList.length ? 0 : -1;
-    currentReplaceLength = replaceLength;
-    if (!currentList.length) {
-      hidePopup();
-      return;
-    }
-    popup.innerHTML = '';
-    for (let i = 0; i < currentList.length; i++) {
-      const div = document.createElement('div');
-      div.textContent = currentList[i];
-      Object.assign(div.style, {
-        padding: '10px 12px',
-        cursor: 'pointer',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        fontSize: '18px',
-      } as CSSStyleDeclaration);
-      if (i === currentIndex) div.style.background = '#152238';
-      div.addEventListener('mouseenter', () => {
-        currentIndex = i;
-        updateHighlight();
-      });
-      div.addEventListener('mousedown', (ev) => {
-        ev.preventDefault();
-        commitPick(currentList[i]);
-      });
-      popup.appendChild(div);
-    }
-    positionPopup();
-    popup.style.display = 'block';
-  }
+  };
 
   function onKeydown(e: KeyboardEvent) {
-    const open = popup.style.display === 'block';
-    if (!open) return;
-    if (e.key === 'ArrowDown') {
+    if (!currentList.length) return;
+    if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
       e.preventDefault();
-      if (currentList.length) {
-        currentIndex = (currentIndex + 1) % currentList.length;
-        updateHighlight();
-      }
-    } else if (e.key === 'ArrowUp') {
+      currentIndex = (currentIndex + 1) % currentList.length;
+      notifyCandidates();
+    } else if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
       e.preventDefault();
-      if (currentList.length) {
-        currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
-        updateHighlight();
-      }
+      currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
+      notifyCandidates();
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (currentIndex >= 0 && currentList[currentIndex]) commitPick(currentList[currentIndex]);
+      if (currentIndex >= 0 && currentList[currentIndex]) ime.commitPick(currentList[currentIndex]);
     } else if (e.key === 'Escape') {
       e.preventDefault();
-      hidePopup();
+      ime.clearCandidates();
     }
-  }
-
-  function onMouseDown(ev: MouseEvent) {
-    if (
-      popup.style.display === 'block' &&
-      !popup.contains(ev.target as Node) &&
-      ev.target !== textarea
-    ) {
-      hidePopup();
-    }
-  }
-
-  function onReposition() {
-    if (popup.style.display === 'block') positionPopup();
   }
 
   textarea.addEventListener('keydown', onKeydown);
-  document.addEventListener('mousedown', onMouseDown);
-  window.addEventListener('resize', onReposition);
-  window.addEventListener('scroll', onReposition);
 
   try {
     const workerUrl = new URL(`${baseUrl}js/ime-worker.js`, window.location.href);
     imeWorker = new Worker(workerUrl, { type: 'classic' });
-  } catch (e) {
+  } catch {
     return {
       ...ime,
       cleanup: () => {
-        popup.remove();
+        textarea.removeEventListener('keydown', onKeydown);
       },
     };
   }
@@ -202,7 +163,16 @@ export function initIme({
       return;
     }
     if (msg.type === 'suggest') {
-      renderPopup(msg.token?.reading || '', msg.candidates || [], msg.token?.replaceLength || 0);
+      updateCandidates(
+        msg.token?.reading || '',
+        msg.candidates || [],
+        msg.token?.replaceLength || 0
+      );
+      return;
+    }
+    if (msg.type === 'learn') {
+      learnedCounts[msg.key] = msg.value;
+      saveLearnedCounts(learnedCounts);
       return;
     }
   };
@@ -212,17 +182,14 @@ export function initIme({
     skkPath: SKK_URL,
     kuromojiPath: KUROMOJI_URL,
     ipadicPath: IPADIC_URL,
+    userCounts: learnedCounts,
   });
 
   return {
     ...ime,
     cleanup: () => {
       textarea.removeEventListener('keydown', onKeydown);
-      document.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('resize', onReposition);
-      window.removeEventListener('scroll', onReposition);
       imeWorker?.terminate?.();
-      popup.remove();
     },
   };
 }

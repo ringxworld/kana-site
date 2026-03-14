@@ -1,5 +1,96 @@
-﻿.page-romaji .card {
+.page-romaji .card {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* Wrapper that keeps the candidate strip in DOM flow directly below the textarea */
+.input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Candidate strip — pinned in DOM flow, never floats over content */
+.candidate-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0 12px;
+  overflow: hidden;
+}
+
+/* Reading label — shows which kana is being converted */
+.candidate-reading {
+  font-size: 12px;
+  color: var(--sub);
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 0 10px 0 0;
+  margin-right: 10px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  line-height: 44px;
+  font-family: inherit;
+}
+
+/* Horizontal scrollable pill container */
+.candidate-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  flex: 1;
+  padding: 6px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.candidate-pills::-webkit-scrollbar {
+  display: none;
+}
+
+/* Individual candidate pill */
+.candidate-pill {
+  flex-shrink: 0;
+  padding: 4px 14px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: var(--text);
+  font-size: 17px;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    border-color 0.1s,
+    color 0.1s;
+  font-family:
+    'Noto Sans JP',
+    system-ui,
+    -apple-system,
+    sans-serif;
+  line-height: 1.5;
+  min-width: 44px;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.candidate-pill:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.candidate-pill.selected {
+  background: rgba(122, 162, 255, 0.15);
+  border-color: var(--acc);
+  color: var(--acc);
+}
+
+/* Flatten textarea bottom corners when the strip is visible */
+.input-area:has(.candidate-strip) .input-lg {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
