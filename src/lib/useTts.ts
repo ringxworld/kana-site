@@ -35,11 +35,11 @@ export function useTts() {
     if (list && list.length) {
       voicesRef.current = list;
       setVoices(list);
-      if (!selectedVoice) setSelectedVoice(list[0].name);
+      setSelectedVoice((prev) => prev || list[0].name);
       return true;
     }
     return false;
-  }, [selectedVoice]);
+  }, []);
 
   useEffect(() => {
     if (!('speechSynthesis' in window)) {

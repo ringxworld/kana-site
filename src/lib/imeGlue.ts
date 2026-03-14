@@ -141,13 +141,13 @@ export function initIme({
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       if (currentList.length) {
-        currentIndex = Math.min(currentIndex + 1, currentList.length - 1);
+        currentIndex = (currentIndex + 1) % currentList.length;
         updateHighlight();
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (currentList.length) {
-        currentIndex = Math.max(currentIndex - 1, 0);
+        currentIndex = (currentIndex - 1 + currentList.length) % currentList.length;
         updateHighlight();
       }
     } else if (e.key === 'Enter') {
