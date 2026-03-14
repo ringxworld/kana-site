@@ -1,18 +1,18 @@
 // ==UserScript==
 // @name         Kana Capture
-// @namespace    http://kana.local/
+// @namespace    http://kotoba.local/
 // @version      0.1.0
 // @description  Select Japanese text on any page → enrich with furigana + translation via kana-site
 // @author       shikarii
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
-// @connect      kana.local
+// @connect      kotoba.local
 // ==/UserScript==
 
 (function () {
   'use strict';
 
-  const API_BASE = 'http://kana.local/api/v1/sentences';
+  const API_BASE = 'http://kotoba.local/api/v1/sentences';
   const JP_RE = /[\u3040-\u9FFF\uFF66-\uFF9F]/;
 
   let btn = null;
@@ -78,10 +78,10 @@
             const data = JSON.parse(res.responseText);
             showResult(data.furigana, data.translation, data.translationModel);
           } catch {
-            alert('[kana-capture] Failed to parse server response.');
+            alert('[kotoba-capture] Failed to parse server response.');
           }
         },
-        onerror: () => alert('[kana-capture] Could not reach kana.local — is the server running?'),
+        onerror: () => alert('[kotoba-capture] Could not reach kotoba.local — is the server running?'),
       });
     };
   });

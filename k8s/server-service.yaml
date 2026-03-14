@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kana-server
-  namespace: kana
+  name: kotoba-server
+  namespace: kotoba
 spec:
   selector:
-    app: kana-server
+    app: kotoba-server
   ports:
     - port: 3001
       targetPort: 3001

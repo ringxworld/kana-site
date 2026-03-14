@@ -1,5 +1,5 @@
 {
-  "name": "kana-ci",
+  "name": "kotoba-lab-ci",
   "sdk": "typescript",
   "source": "./",
   "engineVersion": "v0.15.3"

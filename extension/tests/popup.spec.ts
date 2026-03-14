@@ -49,8 +49,8 @@ test.beforeEach(async ({ page }) => {
     window.close = () => {};
   }, PENDING_TEXT);
 
-  // Mock server calls — popup tries kana.local first, falls back to localhost:3001
-  for (const base of ['http://kana.local', 'http://localhost:3001']) {
+  // Mock server calls — popup tries kotoba.local first, falls back to localhost:3001
+  for (const base of ['http://kotoba.local', 'http://localhost:3001']) {
     await page.route(`${base}/health`, (route) =>
       route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }),
     );
@@ -140,7 +140,7 @@ test('clicking save transitions to done state', async ({ page }) => {
 test('save posts correct deckId to /capture', async ({ page }) => {
   let capturedBody: Record<string, unknown> | null = null;
 
-  await page.route('http://kana.local/api/v1/sentences/capture', async (route) => {
+  await page.route('http://kotoba.local/api/v1/sentences/capture', async (route) => {
     capturedBody = JSON.parse(route.request().postData() ?? '{}') as Record<string, unknown>;
     await route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify(MOCK_CAPTURE) });
   });
@@ -162,7 +162,7 @@ test('save posts correct deckId to /capture', async ({ page }) => {
 
 test('shows error state when server is unreachable', async ({ page }) => {
   // Override health checks to fail so apiBase() throws
-  for (const base of ['http://kana.local', 'http://localhost:3001']) {
+  for (const base of ['http://kotoba.local', 'http://localhost:3001']) {
     await page.route(`${base}/health`, (route) => route.abort());
   }
 

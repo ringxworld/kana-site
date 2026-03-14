@@ -1,5 +1,5 @@
 {
-  "name": "kana-kanji-ime",
+  "name": "kotoba-lab",
   "version": "1.0.0",
   "description": "Browser Japanese IME using kuromoji + SKK dictionary",
   "type": "module",

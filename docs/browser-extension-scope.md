@@ -1,8 +1,8 @@
 # Browser Extension: Furigana Sentence Collector — Scope
 
 A Chrome (MV3) extension that detects Japanese text on any webpage, injects
-furigana annotations via the local kana-site server, and lets users collect
-JP+EN sentence pairs directly into their kana-site database.
+furigana annotations via the local kotoba-lab server, and lets users collect
+JP+EN sentence pairs directly into their kotoba-lab database.
 
 ---
 
@@ -23,7 +23,7 @@ extension/
     index.tsx
   shared/
     parsePairs.ts        Shared copy of client/lib/reader.ts helpers
-    api.ts               Typed wrapper for kana-site REST API
+    api.ts               Typed wrapper for kotoba-lab REST API
   package.json
   vite.config.ts         @crxjs/vite-plugin (HMR-capable MV3 build)
   tsconfig.json
@@ -41,7 +41,7 @@ main client: `parsePairs`, `hasJapaneseChars`, `looksEnglish` are copied into
 **Goal**: collect selected text from any page and send it to the sentence DB.
 
 ### Features
-- **Context menu** — right-click any selection → "Add to kana-site"
+- **Context menu** — right-click any selection → "Add to kotoba-lab"
   - Uses the existing `POST /api/v1/sentences/import` endpoint
   - `source` field set to current tab URL
   - `parsePairs()` applied to selection: if JP + EN paragraph detected, both
@@ -179,7 +179,7 @@ curl -s -X POST http://localhost:3001/api/v1/annotate \
 
 # Manual: Load extension/dist/ as unpacked in Chrome
 # → Browse https://www3.nhk.or.jp/news/easy/
-# → Select a Japanese sentence, right-click → "Add to kana-site"
+# → Select a Japanese sentence, right-click → "Add to kotoba-lab"
 # → Open popup → sentence appears in last-imports list
 # → Phase 2: enable furigana overlay → ruby annotations appear on page
 ```

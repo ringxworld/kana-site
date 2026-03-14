@@ -1,4 +1,4 @@
-const API_BASES = ['http://kana.local', 'http://localhost:3001'];
+const API_BASES = ['http://kotoba.local', 'http://localhost:3001'];
 
 async function apiBase() {
   for (const base of API_BASES) {
@@ -7,7 +7,7 @@ async function apiBase() {
       if (r.ok) return base;
     } catch { /* try next */ }
   }
-  throw new Error('kana-site server unreachable. Is it running?');
+  throw new Error('kotoba-lab server unreachable. Is it running?');
 }
 
 function show(id) {
@@ -59,7 +59,7 @@ async function main() {
   const sel = document.getElementById('deck-select');
   sel.innerHTML = '';
   if (decks.length === 0) {
-    sel.innerHTML = '<option value="">No decks — create one in kana-site first</option>';
+    sel.innerHTML = '<option value="">No decks — create one in kotoba-lab first</option>';
   } else {
     decks.forEach((d) => {
       const opt = document.createElement('option');

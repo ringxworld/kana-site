@@ -1,4 +1,4 @@
-/** Shared request/response types for the kana-site API.
+/** Shared request/response types for the kotoba-lab API.
  *  Mirror this file manually in client/types/api.ts for the frontend.
  *  The frontend must never import from server/. */
 

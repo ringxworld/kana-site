@@ -5,7 +5,7 @@
 Please do not open a public GitHub issue for security vulnerabilities.
 
 Report security issues directly to the maintainer via GitHub's private vulnerability
-reporting at https://github.com/shikarii/kana-site/security/advisories/new
+reporting at https://github.com/shikarii/kotoba-lab/security/advisories/new
 
 Include:
 

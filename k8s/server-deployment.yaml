@@ -1,33 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kana-server
-  namespace: kana
+  name: kotoba-server
+  namespace: kotoba
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kana-server
+      app: kotoba-server
   template:
     metadata:
       labels:
-        app: kana-server
+        app: kotoba-server
     spec:
       containers:
         - name: server
-          image: kana-server:local
+          image: kotoba-server:local
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3001
           envFrom:
             - configMapRef:
-                name: kana-config
+                name: kotoba-config
             - secretRef:
-                name: kana-secret
+                name: kotoba-secret
           volumeMounts:
             - name: data
               mountPath: /data
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: kana-data
+            claimName: kotoba-data

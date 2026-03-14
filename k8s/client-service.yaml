@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kana-client
-  namespace: kana
+  name: kotoba-client
+  namespace: kotoba
 spec:
   selector:
-    app: kana-client
+    app: kotoba-client
   ports:
     - port: 80
       targetPort: 80

@@ -43,12 +43,12 @@ services:
         condition: service_healthy
     environment:
       PORT: "3001"
-      DB_PATH: /data/kana.db
+      DB_PATH: /data/kotoba.db
       CORS_ORIGIN: "http://localhost"
       OLLAMA_URL: "http://ollama:11434"
       OLLAMA_MODEL: "qwen2.5:3b"
     volumes:
-      - kana-data:/data
+      - kotoba-data:/data
     restart: unless-stopped
 
   client:
@@ -62,5 +62,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  kana-data:
+  kotoba-data:
   ollama-data:

@@ -1,5 +1,5 @@
 /**
- * kana-site CI pipelines via Dagger.
+ * kotoba-lab CI pipelines via Dagger.
  *
  * Each function mirrors the equivalent quality-gates.yml job but runs inside
  * a container with persistent cache volumes — npm installs are only downloaded
@@ -20,8 +20,8 @@ class KanaCi {
    */
   @func()
   async clientQuality(source: Directory): Promise<string> {
-    const npmCache = dag.cacheVolume("kana-npm-root");
-    const playwrightCache = dag.cacheVolume("kana-playwright");
+    const npmCache = dag.cacheVolume("kotoba-npm-root");
+    const playwrightCache = dag.cacheVolume("kotoba-playwright");
 
     return dag
       .container()
@@ -56,7 +56,7 @@ class KanaCi {
    */
   @func()
   async serverQuality(source: Directory): Promise<string> {
-    const npmCache = dag.cacheVolume("kana-npm-server");
+    const npmCache = dag.cacheVolume("kotoba-npm-server");
 
     return dag
       .container()

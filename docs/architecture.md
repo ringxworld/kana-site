@@ -2,7 +2,7 @@
 
 ## Overview
 
-kana-site is a browser-based Japanese IME (Input Method Editor) built with React,
+kotoba-lab is a browser-based Japanese IME (Input Method Editor) built with React,
 TypeScript, and Vite. It uses kuromoji for morphological analysis and an SKK dictionary
 for kanji conversion.
 
