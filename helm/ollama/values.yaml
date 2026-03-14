@@ -7,17 +7,27 @@ ollama:
     number: 1
 
 resources:
-  requests:
-    memory: "2Gi"
   limits:
     memory: "4Gi"
-    nvidia.com/gpu: 1
+    nvidia.com/gpu: "1"
+  requests:
+    memory: "2Gi"
+
+persistentVolume:
+  enabled: true
+  size: 4Gi
+  storageClass: ""
 
 service:
   type: ClusterIP
   port: 11434
 
-# Persist downloaded models across pod restarts
-persistentVolume:
+livenessProbe:
   enabled: true
-  size: 4Gi
+  initialDelaySeconds: 60
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  initialDelaySeconds: 30
+  periodSeconds: 10

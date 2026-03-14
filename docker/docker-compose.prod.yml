@@ -1,4 +1,56 @@
 services:
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # One-shot model pull — run once with: docker compose --profile setup run --rm ollama-pull
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "qwen2.5:3b"]
+    restart: "no"
+    profiles: ["setup"]
+
+  server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    ports:
+      - "3001:3001"
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      PORT: "3001"
+      DB_PATH: /data/kana.db
+      CORS_ORIGIN: "http://localhost"
+      OLLAMA_URL: "http://ollama:11434"
+      OLLAMA_MODEL: "qwen2.5:3b"
+    volumes:
+      - kana-data:/data
+    restart: unless-stopped
+
   client:
     build:
       context: ..
@@ -7,19 +59,8 @@ services:
       - "80:80"
     depends_on:
       - server
-
-  server:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.server
-    ports:
-      - "3001:3001"
-    environment:
-      PORT: "3001"
-      DB_PATH: /data/kana.db
-      CORS_ORIGIN: "http://localhost"
-    volumes:
-      - kana-data:/data
+    restart: unless-stopped
 
 volumes:
   kana-data:
+  ollama-data:

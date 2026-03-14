@@ -7,7 +7,6 @@
 // @match        *://*/*
 // @grant        GM_xmlhttpRequest
 // @connect      kana.local
-// @connect      localhost
 // ==/UserScript==
 
 (function () {
