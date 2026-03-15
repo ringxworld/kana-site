@@ -20,7 +20,7 @@ describe('convertKana – hiragana mode', () => {
 
   it('n before vowel forms the correct kana (not ん prematurely)', () => {
     // The core bug: with IMEMode=true, 'n' before a vowel must NOT become ん first
-    expect(convertKana('nokoru')).toBe('のこる');  // was broken: んおる
+    expect(convertKana('nokoru')).toBe('のこる'); // was broken: んおる
     expect(convertKana('nani')).toBe('なに');
     expect(convertKana('neko')).toBe('ねこ');
   });

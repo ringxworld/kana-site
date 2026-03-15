@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCardStore } from '../lib/cardStore';
 import { parsePairs } from '../lib/reader';
-import type { Deck, DeckStats } from '../types/api';
+import type { Deck, DeckStats, AnkiImportResponse } from '../types/api';
+import { API_BASE } from '../types/api';
 import '../styles/decks.css';
 
 interface DeckEntry {
@@ -29,12 +30,14 @@ export default function Decks() {
       decks.map(async (deck) => ({
         deck,
         stats: await store.deckStats(deck.id).catch(() => null),
-      })),
+      }))
     );
     setEntries(withStats);
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -67,39 +70,19 @@ export default function Decks() {
     const file = e.target.files?.[0];
     if (!file) return;
     const deckName = file.name.replace(/\.apkg$/i, '').trim() || 'Imported';
-    const deck = await store.createDeck(deckName);
-    const buf = await file.arrayBuffer();
 
-    // Dynamic imports so sql.js WASM and fflate only load when needed
-    const [fflateModule, { default: initSqlJs }] = await Promise.all([
-      import('fflate'),
-      import('sql.js'),
-    ]);
-
-    const bytes = new Uint8Array(buf);
-    const unzipped = fflateModule.unzipSync(bytes);
-    const dbBytes = unzipped['collection.anki2'] ?? unzipped['collection.anki21'];
-    if (!dbBytes) {
-      setStatus('Invalid .apkg: collection.anki2 not found.');
-      return;
+    const form = new FormData();
+    form.append('file', file);
+    form.append('deckName', deckName);
+    const res = await fetch(`${API_BASE}/api/v1/decks/import/apkg`, { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({ error: res.statusText }))) as { error: string };
+      setStatus(`Import failed: ${err.error}`);
+    } else {
+      const { imported, skipped } = (await res.json()) as AnkiImportResponse;
+      setStatus(`Imported ${imported} cards (${skipped} skipped) from ${file.name}.`);
     }
 
-    const SQL = await initSqlJs();
-    const db = new SQL.Database(dbBytes);
-    const result = db.exec('SELECT flds FROM notes');
-    db.close();
-
-    const pairs = (result[0]?.values ?? []).flatMap((row: (string | number | null | Uint8Array)[]) => {
-      const flds = row[0] as string;
-      const fields = flds.split('\x1f');
-      const front = fields[0]?.trim() ?? '';
-      const back = fields[1]?.trim() ?? '';
-      if (!front) return [];
-      return [{ front, back }];
-    });
-
-    const count = await store.importPairs(deck.id, pairs);
-    setStatus(`Imported ${count} cards from ${file.name}.`);
     if (apkgRef.current) apkgRef.current.value = '';
     await load();
   }
@@ -126,7 +109,9 @@ export default function Decks() {
             onChange={(e) => setNewDesc(e.target.value)}
             placeholder="Description (optional)"
           />
-          <button type="submit" className="btn-primary">Create</button>
+          <button type="submit" className="btn-primary">
+            Create
+          </button>
         </form>
       )}
 
@@ -162,10 +147,7 @@ export default function Decks() {
               >
                 Browse
               </button>
-              <button
-                className="btn-secondary"
-                onClick={() => setImportDeckId(deck.id)}
-              >
+              <button className="btn-secondary" onClick={() => setImportDeckId(deck.id)}>
                 Import text
               </button>
               <button className="btn-danger" onClick={() => handleDelete(deck.id)}>
@@ -187,7 +169,9 @@ export default function Decks() {
               placeholder="Paste JP/EN paired lines here..."
             />
             <div className="import-actions">
-              <button type="submit" className="btn-primary">Import</button>
+              <button type="submit" className="btn-primary">
+                Import
+              </button>
               <button type="button" className="btn-secondary" onClick={() => setImportDeckId(null)}>
                 Cancel
               </button>
@@ -198,12 +182,7 @@ export default function Decks() {
 
       <section className="apkg-import">
         <h2>Import Anki deck (.apkg)</h2>
-        <input
-          ref={apkgRef}
-          type="file"
-          accept=".apkg"
-          onChange={handleApkgImport}
-        />
+        <input ref={apkgRef} type="file" accept=".apkg" onChange={handleApkgImport} />
       </section>
     </main>
   );

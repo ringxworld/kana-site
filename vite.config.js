@@ -9,7 +9,7 @@ function ipadicRawMiddleware() {
   const handler = (req, res, next) => {
     const url = req.url || '';
     if (url.startsWith('/vendor/ipadic/') && url.endsWith('.gz')) {
-      const diskPath = path.join(process.cwd(), 'public', url.replace(/^\/+/, ''));
+      const diskPath = path.join(process.cwd(), 'client/public', url.replace(/^\/+/, ''));
       fs.readFile(diskPath, (err, data) => {
         if (err) {
           res.statusCode = 404;
@@ -40,6 +40,7 @@ function ipadicRawMiddleware() {
 
 export default defineConfig({
   base: './',
+  publicDir: path.join(process.cwd(), 'client/public'),
   server: {
     host: true,
     port: 5173,
@@ -53,9 +54,9 @@ export default defineConfig({
     {
       name: 'static-and-history',
       configureServer(server) {
-        server.middlewares.use('/vendor', serveStatic('public/vendor'));
-        server.middlewares.use('/dict', serveStatic('public/dict'));
-        server.middlewares.use('/js', serveStatic('public/js'));
+        server.middlewares.use('/vendor', serveStatic('client/public/vendor'));
+        server.middlewares.use('/dict', serveStatic('client/public/dict'));
+        server.middlewares.use('/js', serveStatic('client/public/js'));
         server.middlewares.use((req, res, next) => {
           if (req.url?.startsWith('/vendor/ipadic/') && req.url.endsWith('.gz')) {
             res.setHeader('Content-Encoding', 'identity');

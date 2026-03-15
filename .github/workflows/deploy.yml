@@ -31,8 +31,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            public/dict
-            public/vendor
+            client/public/dict
+            client/public/vendor
           key: ${{ runner.os }}-dicts-${{ hashFiles('package-lock.json') }}
 
       - name: Install
@@ -40,7 +40,7 @@ jobs:
 
       - name: Sync Dictionaries
         run: |
-          if [ -f public/dict/SKK-JISYO.L ] && [ -f public/vendor/kuromoji/kuromoji.js ]; then
+          if [ -f client/public/dict/SKK-JISYO.L ] && [ -f client/public/vendor/kuromoji/kuromoji.js ]; then
             echo "Dictionaries already present."
           else
             npm run setup

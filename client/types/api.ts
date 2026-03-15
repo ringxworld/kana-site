@@ -116,9 +116,6 @@ export async function apiImport(req: ImportRequest): Promise<ImportResponse> {
   return res.json() as Promise<ImportResponse>;
 }
 
-/** True when the API base URL is configured (online mode). */
-export const IS_ONLINE_MODE = !!API_BASE;
-
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {
@@ -146,7 +143,11 @@ export function apiDeleteDeck(id: number): Promise<void> {
   return fetch(`${API_BASE}/api/v1/decks/${id}`, { method: 'DELETE' }).then(() => undefined);
 }
 
-export function apiListCards(deckId: number, limit = 50, offset = 0): Promise<{ cards: Card[]; total: number }> {
+export function apiListCards(
+  deckId: number,
+  limit = 50,
+  offset = 0
+): Promise<{ cards: Card[]; total: number }> {
   return apiJson(`${API_BASE}/api/v1/decks/${deckId}/cards?limit=${limit}&offset=${offset}`);
 }
 
@@ -160,7 +161,7 @@ export function apiCreateCard(deckId: number, req: CreateCardRequest): Promise<C
 
 export function apiDeleteCard(deckId: number, cardId: number): Promise<void> {
   return fetch(`${API_BASE}/api/v1/decks/${deckId}/cards/${cardId}`, { method: 'DELETE' }).then(
-    () => undefined,
+    () => undefined
   );
 }
 
@@ -171,7 +172,10 @@ export async function apiNextDue(deckId: number): Promise<CardWithSchedule | nul
   return res.json() as Promise<CardWithSchedule>;
 }
 
-export function apiSubmitReview(deckId: number, req: SubmitReviewRequest): Promise<CardWithSchedule> {
+export function apiSubmitReview(
+  deckId: number,
+  req: SubmitReviewRequest
+): Promise<CardWithSchedule> {
   return apiJson(`${API_BASE}/api/v1/decks/${deckId}/review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -185,7 +189,9 @@ export function apiDeckStats(deckId: number): Promise<DeckStats> {
 
 // ─── Sentence API helpers ─────────────────────────────────────────────────────
 
-export async function apiFetchSentences(query: ListSentencesQuery = {}): Promise<ListSentencesResponse> {
+export async function apiFetchSentences(
+  query: ListSentencesQuery = {}
+): Promise<ListSentencesResponse> {
   const params = new URLSearchParams();
   if (query.q) params.set('q', query.q);
   if (query.source) params.set('source', query.source);

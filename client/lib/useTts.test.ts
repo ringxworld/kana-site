@@ -154,7 +154,13 @@ describe('useTts', () => {
   it('hasJaVoice is false when no Japanese voice is available', () => {
     const { synth } = makeSpeechSynthesisMock();
     synth.getVoices.mockReturnValue([
-      { name: 'Google US English', lang: 'en-US', default: true, localService: false, voiceURI: 'Google US English' } as SpeechSynthesisVoice,
+      {
+        name: 'Google US English',
+        lang: 'en-US',
+        default: true,
+        localService: false,
+        voiceURI: 'Google US English',
+      } as SpeechSynthesisVoice,
     ]);
     installSynth(synth);
 
