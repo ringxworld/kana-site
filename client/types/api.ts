@@ -116,9 +116,6 @@ export async function apiImport(req: ImportRequest): Promise<ImportResponse> {
   return res.json() as Promise<ImportResponse>;
 }
 
-/** True when the API base URL is configured (online mode). */
-export const IS_ONLINE_MODE = !!API_BASE;
-
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   if (!res.ok) {

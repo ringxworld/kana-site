@@ -50,3 +50,27 @@
   letter-spacing: 0.2em;
   color: var(--acc);
 }
+
+.tag {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(122, 162, 247, 0.15);
+  color: var(--acc);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.tag-demo {
+  background: rgba(224, 175, 104, 0.15);
+  color: #e0af68;
+}
+
+.demo-banner {
+  margin: 0 0 12px;
+  padding: 6px 12px;
+  background: rgba(224, 175, 104, 0.1);
+  border-left: 3px solid #e0af68;
+  color: #e0af68;
+  font-size: 12px;
+}

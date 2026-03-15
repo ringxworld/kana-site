@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCardStore } from '../lib/cardStore';
 import { parsePairs } from '../lib/reader';
 import type { Deck, DeckStats, AnkiImportResponse } from '../types/api';
-import { API_BASE, IS_ONLINE_MODE } from '../types/api';
+import { API_BASE } from '../types/api';
 import '../styles/decks.css';
 
 interface DeckEntry {
@@ -71,61 +71,16 @@ export default function Decks() {
     if (!file) return;
     const deckName = file.name.replace(/\.apkg$/i, '').trim() || 'Imported';
 
-    if (IS_ONLINE_MODE) {
-      // Server-side import: let the backend parse the .apkg with better-sqlite3
-      const form = new FormData();
-      form.append('file', file);
-      form.append('deckName', deckName);
-      const res = await fetch(`${API_BASE}/api/v1/decks/import/apkg`, {
-        method: 'POST',
-        body: form,
-      });
-      if (!res.ok) {
-        const err = (await res.json().catch(() => ({ error: res.statusText }))) as {
-          error: string;
-        };
-        setStatus(`Import failed: ${err.error}`);
-        return;
-      }
+    const form = new FormData();
+    form.append('file', file);
+    form.append('deckName', deckName);
+    const res = await fetch(`${API_BASE}/api/v1/decks/import/apkg`, { method: 'POST', body: form });
+    if (!res.ok) {
+      const err = (await res.json().catch(() => ({ error: res.statusText }))) as { error: string };
+      setStatus(`Import failed: ${err.error}`);
+    } else {
       const { imported, skipped } = (await res.json()) as AnkiImportResponse;
       setStatus(`Imported ${imported} cards (${skipped} skipped) from ${file.name}.`);
-    } else {
-      // Offline / GitHub Pages: parse .apkg client-side with fflate + sql.js
-      const deck = await store.createDeck(deckName);
-      const buf = await file.arrayBuffer();
-
-      // Dynamic imports so sql.js WASM and fflate only load when needed
-      const [fflateModule, { default: initSqlJs }] = await Promise.all([
-        import('fflate'),
-        import('sql.js'),
-      ]);
-
-      const bytes = new Uint8Array(buf);
-      const unzipped = fflateModule.unzipSync(bytes);
-      const dbBytes = unzipped['collection.anki2'] ?? unzipped['collection.anki21'];
-      if (!dbBytes) {
-        setStatus('Invalid .apkg: collection.anki2 not found.');
-        return;
-      }
-
-      const SQL = await initSqlJs();
-      const db = new SQL.Database(dbBytes);
-      const result = db.exec('SELECT flds FROM notes');
-      db.close();
-
-      const pairs = (result[0]?.values ?? []).flatMap(
-        (row: (string | number | null | Uint8Array)[]) => {
-          const flds = row[0] as string;
-          const fields = flds.split('\x1f');
-          const front = fields[0]?.trim() ?? '';
-          const back = fields[1]?.trim() ?? '';
-          if (!front) return [];
-          return [{ front, back }];
-        }
-      );
-
-      const count = await store.importPairs(deck.id, pairs);
-      setStatus(`Imported ${count} cards from ${file.name}.`);
     }
 
     if (apkgRef.current) apkgRef.current.value = '';

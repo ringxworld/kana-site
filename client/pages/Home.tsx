@@ -42,6 +42,15 @@ export default function Home() {
             <p>Paste paired JP/EN lines, render furigana, and reveal translations per sentence.</p>
             <span className="tool-cta">Open tool</span>
           </Link>
+
+          <Link className="tool-card" to="/demo/decks">
+            <div className="tool-card-header">
+              <h2>Flashcards</h2>
+              <span className="tag tag-demo">Demo</span>
+            </div>
+            <p>FSRS spaced-repetition flashcards — try the demo deck of basic Japanese phrases.</p>
+            <span className="tool-cta">Open demo</span>
+          </Link>
         </section>
       </main>
     </div>

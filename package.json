@@ -8,8 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "serve": "vite preview",
-    "vendor:sync": "npx shx mkdir -p public/vendor/kuromoji public/vendor/ipadic && npx shx cp node_modules/kuromoji/build/kuromoji.js public/vendor/kuromoji/ && npx shx cp -r node_modules/kuromoji/dict/* public/vendor/ipadic/",
-    "fetch:skk": "npx shx mkdir -p public/dict && curl -L -o public/dict/SKK-JISYO.L https://skk-dev.github.io/dict/SKK-JISYO.L",
+    "vendor:sync": "npx shx mkdir -p client/public/vendor/kuromoji client/public/vendor/ipadic && npx shx cp node_modules/kuromoji/build/kuromoji.js client/public/vendor/kuromoji/ && npx shx cp -r node_modules/kuromoji/dict/* client/public/vendor/ipadic/",
+    "fetch:skk": "npx shx mkdir -p client/public/dict && curl -L -o client/public/dict/SKK-JISYO.L https://skk-dev.github.io/dict/SKK-JISYO.L",
     "setup": "npm run vendor:sync && npm run fetch:skk",
     "format": "prettier --write .",
     "lint": "eslint \"client/**/*.{ts,tsx}\" --fix",
@@ -20,13 +20,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "fflate": "^0.8.2",
-    "idb": "^8.0.3",
     "kuromoji": "^0.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
-    "sql.js": "^1.14.1",
     "wanakana": "^5.1.0"
   },
   "devDependencies": {
@@ -36,7 +33,6 @@
     "@types/node": "^22.10.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/sql.js": "^1.4.9",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "@vitejs/plugin-react": "^4.3.1",
