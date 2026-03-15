@@ -179,6 +179,9 @@ test('shows error when no pending text is set', async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as Record<string, unknown>)['browser'] = {
       storage: {
+        sync: {
+          get: (_key: string) => Promise.resolve({ kotoba_api_key: '' }),
+        },
         session: {
           get: () => Promise.resolve({}),
           remove: () => Promise.resolve(),
