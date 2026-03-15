@@ -15,6 +15,9 @@ const createDeckSchema = z.object({
 const createCardSchema = z.object({
   front: z.string().min(1),
   back: z.string().min(1),
+  noteType: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  extraFields: z.record(z.string()).optional(),
 });
 
 const submitReviewSchema = z.object({

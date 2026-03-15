@@ -80,6 +80,9 @@ export function setupDatabase() {
     'ALTER TABLE cards ADD COLUMN translation_model TEXT',
     'ALTER TABLE cards ADD COLUMN furigana_source TEXT',
     'ALTER TABLE cards ADD COLUMN enriched_at INTEGER',
+    'ALTER TABLE cards ADD COLUMN note_type TEXT',
+    'ALTER TABLE cards ADD COLUMN tags TEXT',
+    'ALTER TABLE cards ADD COLUMN extra_fields TEXT',
   ]) {
     try {
       db.exec(col);

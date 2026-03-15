@@ -54,6 +54,12 @@ export interface Card {
   front: string;
   back: string;
   createdAt: number;
+  /** Anki note type name, e.g. "Basic", "Cloze". Null for manually-created cards. */
+  noteType: string | null;
+  /** Tags from the Anki note. Empty array for manually-created cards. */
+  tags: string[];
+  /** All named fields from the Anki note with raw HTML values. Empty object for manually-created cards. */
+  extraFields: Record<string, string>;
 }
 
 export interface CardScheduling {
@@ -89,6 +95,9 @@ export interface CreateDeckRequest {
 export interface CreateCardRequest {
   front: string;
   back: string;
+  noteType?: string;
+  tags?: string[];
+  extraFields?: Record<string, string>;
 }
 
 export interface SubmitReviewRequest {

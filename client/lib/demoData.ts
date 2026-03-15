@@ -28,5 +28,8 @@ export const DEMO_CARDS: CardWithSchedule[] = PAIRS.map(([front, back], i) => ({
   front,
   back,
   createdAt: 0,
+  noteType: null,
+  tags: [],
+  extraFields: {},
   scheduling: { cardId: i + 1, ...newFsrsState(0) },
 }));

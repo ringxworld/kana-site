@@ -16,7 +16,7 @@ export function toDeck(row: typeof decks.$inferSelect): Deck {
 }
 
 export function toCard(
-  row: Pick<typeof cards.$inferSelect, 'id' | 'deckId' | 'front' | 'back' | 'createdAt'>
+  row: Pick<typeof cards.$inferSelect, 'id' | 'deckId' | 'front' | 'back' | 'createdAt' | 'noteType' | 'tags' | 'extraFields'>
 ): Card {
   return {
     id: row.id,
@@ -24,6 +24,9 @@ export function toCard(
     front: row.front,
     back: row.back,
     createdAt: row.createdAt,
+    noteType: row.noteType ?? null,
+    tags: row.tags ? (JSON.parse(row.tags) as string[]) : [],
+    extraFields: row.extraFields ? (JSON.parse(row.extraFields) as Record<string, string>) : {},
   };
 }
 
@@ -59,7 +62,7 @@ export function listCards(
   ).n;
   const rows = rawDb
     .prepare(
-      'SELECT id, deck_id, front, back, created_at FROM cards WHERE deck_id = ? ORDER BY id LIMIT ? OFFSET ?'
+      'SELECT id, deck_id, front, back, created_at, note_type, tags, extra_fields FROM cards WHERE deck_id = ? ORDER BY id LIMIT ? OFFSET ?'
     )
     .all(deckId, limit, offset) as Array<{
     id: number;
@@ -67,6 +70,9 @@ export function listCards(
     front: string;
     back: string;
     created_at: number;
+    note_type: string | null;
+    tags: string | null;
+    extra_fields: string | null;
   }>;
   return {
     cards: rows.map((r) => ({
@@ -75,16 +81,30 @@ export function listCards(
       front: r.front,
       back: r.back,
       createdAt: r.created_at,
+      noteType: r.note_type ?? null,
+      tags: r.tags ? (JSON.parse(r.tags) as string[]) : [],
+      extraFields: r.extra_fields ? (JSON.parse(r.extra_fields) as Record<string, string>) : {},
     })),
     total,
   };
 }
 
-export function createCard(deckId: number, { front, back }: CreateCardRequest): Card {
+export function createCard(
+  deckId: number,
+  { front, back, noteType, tags, extraFields }: CreateCardRequest,
+): Card {
   const db = getDb();
   const card = db
     .insert(cards)
-    .values({ deckId, front, back, createdAt: Math.floor(Date.now() / 1000) })
+    .values({
+      deckId,
+      front,
+      back,
+      createdAt: Math.floor(Date.now() / 1000),
+      noteType: noteType ?? null,
+      tags: tags ? JSON.stringify(tags) : null,
+      extraFields: extraFields ? JSON.stringify(extraFields) : null,
+    })
     .returning()
     .get();
   const fsrs = newFsrsState(Date.now());
@@ -111,12 +131,12 @@ export function deleteCard(id: number): void {
 
 // ─── Bulk import (used by text + anki import) ─────────────────────────────────
 
-export function importCards(deckId: number, pairs: Array<{ front: string; back: string }>): number {
+export function importCards(deckId: number, cards: CreateCardRequest[]): number {
   let imported = 0;
-  for (const { front, back } of pairs) {
-    if (!front.trim()) continue;
+  for (const card of cards) {
+    if (!card.front.trim()) continue;
     try {
-      createCard(deckId, { front: front.trim(), back: back.trim() });
+      createCard(deckId, { ...card, front: card.front.trim(), back: card.back.trim() });
       imported++;
     } catch {
       // skip duplicates or constraint violations

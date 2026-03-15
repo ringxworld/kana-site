@@ -12,6 +12,9 @@ type RawScheduledRow = {
   front: string;
   back: string;
   created_at: number;
+  note_type: string | null;
+  tags: string | null;
+  extra_fields: string | null;
   card_id: number;
   stability: number;
   difficulty: number;
@@ -28,6 +31,7 @@ export function nextDue(deckId: number): CardWithSchedule | null {
   const row = getRawDb()
     .prepare(
       `SELECT c.id, c.deck_id, c.front, c.back, c.created_at,
+              c.note_type, c.tags, c.extra_fields,
               s.card_id, s.stability, s.difficulty, s.elapsed_days,
               s.scheduled_days, s.reps, s.lapses, s.state, s.due_at, s.last_review_at
        FROM cards c
@@ -48,6 +52,9 @@ function rowToCardWithSchedule(r: RawScheduledRow): CardWithSchedule {
     front: r.front,
     back: r.back,
     createdAt: r.created_at,
+    noteType: r.note_type ?? null,
+    tags: r.tags ? (JSON.parse(r.tags) as string[]) : [],
+    extraFields: r.extra_fields ? (JSON.parse(r.extra_fields) as Record<string, string>) : {},
     scheduling: {
       cardId: r.card_id,
       stability: r.stability,
@@ -118,6 +125,9 @@ export function submitReview({ cardId, rating }: SubmitReviewRequest): CardWithS
     front: card.front,
     back: card.back,
     createdAt: card.createdAt,
+    noteType: card.noteType ?? null,
+    tags: card.tags ? (JSON.parse(card.tags) as string[]) : [],
+    extraFields: card.extraFields ? (JSON.parse(card.extraFields) as Record<string, string>) : {},
     scheduling: {
       cardId,
       stability: next.stability,
