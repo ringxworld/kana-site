@@ -41,14 +41,12 @@ def _strip_html(text: str) -> str:
     return html.unescape(text).strip()
 
 
-def _post_json(url: str, payload: dict) -> dict:
+def _post_json(url: str, payload: dict, api_key: str = "") -> dict:
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     data = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        url,
-        data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
     with urllib.request.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
 
@@ -70,6 +68,12 @@ class ExportDialog(QDialog):
         self.url_input.setText(cfg.get("server_url", "http://localhost:3000"))
         layout.addWidget(self.url_input)
 
+        layout.addWidget(QLabel("API Key (leave blank if auth is disabled):"))
+        self.key_input = QLineEdit()
+        self.key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.key_input.setText(cfg.get("api_key", ""))
+        layout.addWidget(self.key_input)
+
         layout.addWidget(QLabel("Deck to export:"))
         self.deck_combo = QComboBox()
         for name in sorted(mw.col.decks.all_names()):
@@ -83,8 +87,8 @@ class ExportDialog(QDialog):
         btns.rejected.connect(self.reject)
         layout.addWidget(btns)
 
-    def values(self) -> tuple[str, str]:
-        return self.url_input.text().rstrip("/"), self.deck_combo.currentText()
+    def values(self) -> tuple[str, str, str]:
+        return self.url_input.text().rstrip("/"), self.key_input.text().strip(), self.deck_combo.currentText()
 
 
 # ── main action ───────────────────────────────────────────────────────────────
@@ -95,11 +99,12 @@ def export_deck() -> None:
     if dlg.exec() != QDialog.DialogCode.Accepted:
         return
 
-    server_url, deck_name = dlg.values()
+    server_url, api_key, deck_name = dlg.values()
 
-    # Persist server URL for next time
+    # Persist server URL and api_key for next time
     cfg = mw.addonManager.getConfig(__name__) or {}
     cfg["server_url"] = server_url
+    cfg["api_key"] = api_key
     mw.addonManager.writeConfig(__name__, cfg)
 
     # Collect note data on the main thread (safe, fast)
@@ -139,13 +144,13 @@ def export_deck() -> None:
 
     # HTTP work runs in background so the UI stays responsive
     def do_export() -> tuple[int, int]:
-        deck_resp = _post_json(f"{server_url}/api/v1/decks", {"name": deck_name})
+        deck_resp = _post_json(f"{server_url}/api/v1/decks", {"name": deck_name}, api_key)
         deck_id = deck_resp["id"]
 
         imported = skipped = 0
         for payload in payloads:
             try:
-                _post_json(f"{server_url}/api/v1/decks/{deck_id}/cards", payload)
+                _post_json(f"{server_url}/api/v1/decks/{deck_id}/cards", payload, api_key)
                 imported += 1
             except Exception:
                 skipped += 1

@@ -1,5 +1,14 @@
 const API_BASES = ['http://kotoba.local', 'http://localhost:3001'];
 
+async function getApiKey() {
+  const { kotoba_api_key } = await browser.storage.sync.get('kotoba_api_key');
+  return kotoba_api_key ?? '';
+}
+
+function authHeaders(apiKey) {
+  return apiKey ? { Authorization: `Bearer ${apiKey}` } : {};
+}
+
 async function apiBase() {
   for (const base of API_BASES) {
     try {
@@ -11,8 +20,8 @@ async function apiBase() {
 }
 
 function show(id) {
-  ['loading', 'result', 'done', 'error'].forEach((s) => {
-    document.getElementById(s).classList.toggle('hidden', s !== id);
+  ['loading', 'result', 'done', 'error', 'settings'].forEach((s) => {
+    document.getElementById(s)?.classList.toggle('hidden', s !== id);
   });
 }
 
@@ -21,14 +30,17 @@ function setError(msg) {
   show('error');
 }
 
-async function loadDecks(base) {
-  const res = await fetch(`${base}/api/v1/decks`);
+async function loadDecks(base, apiKey) {
+  const res = await fetch(`${base}/api/v1/decks`, { headers: authHeaders(apiKey) });
+  if (res.status === 401) throw new Error('Invalid API key — update it in settings.');
   if (!res.ok) throw new Error('Failed to load decks');
   return res.json();
 }
 
 async function main() {
   show('loading');
+
+  const apiKey = await getApiKey();
 
   const { pendingText } = await browser.storage.session.get('pendingText');
   if (!pendingText) { setError('No text captured. Select text then right-click → Add to Kana.'); return; }
@@ -40,9 +52,10 @@ async function main() {
   try {
     const res = await fetch(`${base}/api/v1/sentences/enrich`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders(apiKey) },
       body: JSON.stringify({ text: pendingText }),
     });
+    if (res.status === 401) { setError('Invalid API key — update it in extension settings.'); return; }
     if (!res.ok) throw new Error(`Enrich failed: ${res.status}`);
     enrichData = await res.json();
   } catch (e) { setError(e.message); return; }
@@ -54,7 +67,7 @@ async function main() {
     `${enrichData.furiganaSource} · ${enrichData.translationModel}`;
 
   let decks;
-  try { decks = await loadDecks(base); } catch { decks = []; }
+  try { decks = await loadDecks(base, apiKey); } catch (e) { setError(e.message); return; }
 
   const sel = document.getElementById('deck-select');
   sel.innerHTML = '';
@@ -80,7 +93,7 @@ async function main() {
     try {
       const res = await fetch(`${base}/api/v1/sentences/capture`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders(apiKey) },
         body: JSON.stringify({ text: pendingText, deckId }),
       });
       if (!res.ok) throw new Error(`Save failed: ${res.status}`);
