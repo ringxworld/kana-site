@@ -109,12 +109,35 @@ export interface AnkiImportResponse {
 
 export const API_BASE = import.meta.env.VITE_API_URL ?? '';
 
+const API_KEY_STORAGE = 'kotoba_api_key';
+
+export function getApiKey(): string {
+  return localStorage.getItem(API_KEY_STORAGE) ?? '';
+}
+export function setApiKey(key: string): void {
+  localStorage.setItem(API_KEY_STORAGE, key);
+}
+export function clearApiKey(): void {
+  localStorage.removeItem(API_KEY_STORAGE);
+}
+
+function authHeaders(): Record<string, string> {
+  const key = getApiKey();
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
+function handleUnauthorized(): void {
+  clearApiKey();
+  window.location.hash = '#/login';
+}
+
 export async function apiImport(req: ImportRequest): Promise<ImportResponse> {
   const res = await fetch(`${API_BASE}/api/v1/sentences/import`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(req),
   });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) {
     const err = (await res.json().catch(() => ({ error: res.statusText }))) as ErrorResponse;
     throw new Error(err.error);
@@ -123,7 +146,11 @@ export async function apiImport(req: ImportRequest): Promise<ImportResponse> {
 }
 
 async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  const res = await fetch(url, {
+    ...init,
+    headers: { ...(init?.headers ?? {}), ...authHeaders() },
+  });
+  if (res.status === 401) { handleUnauthorized(); throw new Error('Unauthorized'); }
   if (!res.ok) {
     const err = (await res.json().catch(() => ({ error: res.statusText }))) as ErrorResponse;
     throw new Error(err.error);
@@ -146,7 +173,7 @@ export function apiCreateDeck(req: CreateDeckRequest): Promise<Deck> {
 }
 
 export function apiDeleteDeck(id: number): Promise<void> {
-  return fetch(`${API_BASE}/api/v1/decks/${id}`, { method: 'DELETE' }).then(() => undefined);
+  return fetch(`${API_BASE}/api/v1/decks/${id}`, { method: 'DELETE', headers: authHeaders() }).then(() => undefined);
 }
 
 export function apiListCards(
@@ -166,7 +193,7 @@ export function apiCreateCard(deckId: number, req: CreateCardRequest): Promise<C
 }
 
 export function apiDeleteCard(deckId: number, cardId: number): Promise<void> {
-  return fetch(`${API_BASE}/api/v1/decks/${deckId}/cards/${cardId}`, { method: 'DELETE' }).then(
+  return fetch(`${API_BASE}/api/v1/decks/${deckId}/cards/${cardId}`, { method: 'DELETE', headers: authHeaders() }).then(
     () => undefined
   );
 }

@@ -39,6 +39,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript((text: string) => {
     (window as unknown as Record<string, unknown>)['browser'] = {
       storage: {
+        sync: {
+          get: (_key: string) => Promise.resolve({ kotoba_api_key: '' }),
+        },
         session: {
           get: (_key: string) => Promise.resolve({ pendingText: text }),
           remove: (_key: string) => Promise.resolve(),
@@ -176,6 +179,9 @@ test('shows error when no pending text is set', async ({ page }) => {
   await page.addInitScript(() => {
     (window as unknown as Record<string, unknown>)['browser'] = {
       storage: {
+        sync: {
+          get: (_key: string) => Promise.resolve({ kotoba_api_key: '' }),
+        },
         session: {
           get: () => Promise.resolve({}),
           remove: () => Promise.resolve(),

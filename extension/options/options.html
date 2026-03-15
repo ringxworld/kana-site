@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kotoba Settings</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 1.5rem; max-width: 400px; }
+    label { display: block; margin-bottom: 0.25rem; font-size: 0.9rem; }
+    input { width: 100%; padding: 0.5rem; box-sizing: border-box; margin-bottom: 1rem; font-size: 1rem; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; }
+    #status { margin-top: 0.75rem; font-size: 0.85rem; color: green; }
+  </style>
+</head>
+<body>
+  <h2>Kotoba Settings</h2>
+  <label for="api-key">API Key</label>
+  <input id="api-key" type="password" placeholder="Your KOTOBA_API_KEY" />
+  <button id="save-btn">Save</button>
+  <div id="status"></div>
+  <script src="options.js"></script>
+</body>
+</html>

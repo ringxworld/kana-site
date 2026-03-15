@@ -1,7 +1,17 @@
-﻿import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { API_BASE, clearApiKey, getApiKey } from '../types/api';
 
 export default function Nav() {
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    clearApiKey();
+    navigate('/login');
+  }
+
+  const showLogout = !!API_BASE && !!getApiKey();
+
   return (
     <nav className="top-nav">
       <NavLink end className={({ isActive }) => (isActive ? 'nav-link active' : 'nav-link')} to="/">
@@ -25,6 +35,11 @@ export default function Nav() {
       >
         Flashcards
       </NavLink>
+      {showLogout && (
+        <button className="nav-link nav-logout" onClick={handleLogout}>
+          Logout
+        </button>
+      )}
     </nav>
   );
 }

@@ -6,6 +6,8 @@ const EnvSchema = z.object({
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   OLLAMA_URL: z.string().default('http://ollama:11434'),
   OLLAMA_MODEL: z.string().default('qwen2.5:3b'),
+  /** If set, all /api/v1/* requests must supply Authorization: Bearer <key>. */
+  KOTOBA_API_KEY: z.string().optional(),
 });
 
 export type Config = z.infer<typeof EnvSchema>;
