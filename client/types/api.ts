@@ -53,6 +53,9 @@ export interface Card {
   front: string;
   back: string;
   createdAt: number;
+  noteType: string | null;
+  tags: string[];
+  extraFields: Record<string, string>;
 }
 
 export interface CardScheduling {
@@ -88,6 +91,9 @@ export interface CreateDeckRequest {
 export interface CreateCardRequest {
   front: string;
   back: string;
+  noteType?: string;
+  tags?: string[];
+  extraFields?: Record<string, string>;
 }
 
 export interface SubmitReviewRequest {

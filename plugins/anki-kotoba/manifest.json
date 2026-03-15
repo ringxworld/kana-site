@@ -1,0 +1,8 @@
+{
+  "package": "anki-kotoba",
+  "name": "Kotoba-Lab Exporter",
+  "mod": 0,
+  "conflicts": [],
+  "min_point_version": 45,
+  "max_point_version": -1
+}

@@ -35,6 +35,10 @@ export const cards = sqliteTable('cards', {
   translationModel: text('translation_model'),
   furiganaSource: text('furigana_source'),
   enrichedAt: integer('enriched_at'),
+  // Anki note metadata — null for manually-created cards
+  noteType: text('note_type'),
+  tags: text('tags'),         // JSON string: string[]
+  extraFields: text('extra_fields'), // JSON string: Record<string, string> — all named fields with raw HTML
 });
 
 export type CardRow = typeof cards.$inferSelect;
